@@ -225,6 +225,16 @@
       animation: pulse 1s infinite;
     }
     
+    .btn-snap-trail {
+      background: #ff69b4;
+      color: #fff;
+    }
+    
+    .btn-snap-trail.active {
+      background: #e91e63;
+      animation: pulse 1s infinite;
+    }
+    
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
@@ -413,8 +423,10 @@
         <div class="btn-row">
           <button class="btn-sm btn-primary" id="btn-snap" disabled title="Snap to NHD">🌊 NHD</button>
           <button class="btn-sm btn-portage" id="btn-portage" disabled title="Snap to Portage Trail">🥾 Portage</button>
-          <button class="btn-sm btn-edit" id="btn-edit" disabled title="Edit Trail">✏️ Edit</button>
+          <button class="btn-sm btn-snap-trail" id="btn-snap-trail" disabled title="Snap to Another Trail">🔗 Trail</button>
         </div>
+        <div class="btn-row">
+          <button class="btn-sm btn-edit" id="btn-edit" disabled title="Edit Trail">✏️ Edit</button>
         <div class="btn-row">
           <button class="btn-sm btn-mark-portage" id="btn-mark-portage" disabled title="Mark Portage Section">🏕️ Mark</button>
           <button class="btn-sm btn-clear-portages" id="btn-clear-portages" disabled title="Clear Portages">🗑️ Clear</button>
@@ -441,7 +453,7 @@
         </div>
         <div class="legend-item toggle" id="toggle-full-network">
           <input type="checkbox" id="chk-full-network">
-          <div class="legend-color" style="background: #66bb6a"></div>
+          <div class="legend-color" style="background: #ff69b4"></div>
           <span>Full Trail Network</span>
         </div>
         <div class="legend-item">
@@ -654,7 +666,7 @@
           data: geojson
         });
         
-        // Add line layer for the full network (lighter green, thinner)
+        // Add line layer for the full network (pink, thinner)
         map.addLayer({
           id: 'full-trail-network-layer',
           type: 'line',
@@ -663,9 +675,9 @@
             'visibility': 'none'  // Hidden by default
           },
           paint: {
-            'line-color': '#66bb6a',
+            'line-color': '#ff69b4',
             'line-width': 2,
-            'line-opacity': 0.7
+            'line-opacity': 0.8
           }
         }, 'portage-landings-layer');  // Insert below portage landings
         
@@ -726,6 +738,7 @@
     
     const btnSnap = document.getElementById('btn-snap');
     const btnPortage = document.getElementById('btn-portage');
+    const btnSnapTrail = document.getElementById('btn-snap-trail');
     const btnMarkPortage = document.getElementById('btn-mark-portage');
     const btnClearPortages = document.getElementById('btn-clear-portages');
     const btnEdit = document.getElementById('btn-edit');
@@ -749,6 +762,7 @@
     };
     btnSnap.onclick = () => snapCurrentTrail();
     btnPortage.onclick = () => snapToPortage();
+    btnSnapTrail.onclick = () => startSnapToTrailMode();
     btnMarkPortage.onclick = () => startMarkPortageMode();
     btnClearPortages.onclick = () => clearPortages();
     btnEdit.onclick = () => toggleEditMode();
@@ -1001,6 +1015,7 @@
       
       btnSnap.disabled = data.nearbyNHD.length === 0;
       btnPortage.disabled = false;
+      btnSnapTrail.disabled = false;
       btnMarkPortage.disabled = false;
       btnClearPortages.disabled = !(data.analysis.portageSegments && data.analysis.portageSegments.length > 0);
       btnEdit.disabled = false;
@@ -1392,6 +1407,97 @@
         }
       } catch (err) {
         log('Clear portages failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Snap to Trail Mode
+    let snapTrailMode = false;
+    let snapTrailClicks = [];
+    let snapTrailMarkers = [];
+    
+    function startSnapToTrailMode() {
+      if (!currentTrail) return;
+      
+      if (snapTrailMode) {
+        cancelSnapToTrailMode();
+        return;
+      }
+      
+      // Make sure full network is visible
+      if (!document.getElementById('chk-full-network').checked) {
+        document.getElementById('chk-full-network').checked = true;
+        map.setLayoutProperty('full-trail-network-layer', 'visibility', 'visible');
+        log('Enabled Full Trail Network layer for snapping', 'info');
+      }
+      
+      snapTrailMode = true;
+      snapTrailClicks = [];
+      btnSnapTrail.textContent = '❌ Cancel';
+      btnSnapTrail.classList.add('active');
+      
+      log('Click on your CURRENT trail near the point to snap FROM', 'info');
+      
+      map.on('click', handleSnapTrailClick);
+      map.getCanvas().style.cursor = 'crosshair';
+    }
+    
+    function cancelSnapToTrailMode() {
+      snapTrailMode = false;
+      snapTrailClicks = [];
+      btnSnapTrail.textContent = '🔗 Trail';
+      btnSnapTrail.classList.remove('active');
+      map.off('click', handleSnapTrailClick);
+      map.getCanvas().style.cursor = '';
+      
+      snapTrailMarkers.forEach(m => m.remove());
+      snapTrailMarkers = [];
+    }
+    
+    async function handleSnapTrailClick(e) {
+      if (!snapTrailMode) return;
+      
+      const lngLat = e.lngLat;
+      snapTrailClicks.push([lngLat.lng, lngLat.lat]);
+      
+      const marker = new mapboxgl.Marker({ color: snapTrailClicks.length === 1 ? '#ff69b4' : '#00ff00' })
+        .setLngLat(lngLat)
+        .addTo(map);
+      snapTrailMarkers.push(marker);
+      
+      if (snapTrailClicks.length === 1) {
+        log('Now click on the TARGET trail to snap TO', 'info');
+      } else if (snapTrailClicks.length === 2) {
+        await performSnapToTrail(snapTrailClicks[0], snapTrailClicks[1]);
+        cancelSnapToTrailMode();
+      }
+    }
+    
+    async function performSnapToTrail(fromPoint, toPoint) {
+      showLoading(true);
+      
+      try {
+        const res = await fetch('/api/draw/snap-to-trail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trailId: currentTrail.id,
+            fromPoint: fromPoint,
+            toPoint: toPoint
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          log(`Snapped trail endpoint to target trail (moved ${data.distanceMoved?.toFixed(1) || '?'}m)`, 'success');
+          await loadTrail(currentTrail.id);
+        } else {
+          log('Snap to trail failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        log('Snap to trail failed: ' + err.message, 'error');
       } finally {
         showLoading(false);
       }
