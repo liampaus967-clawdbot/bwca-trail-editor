@@ -97,22 +97,33 @@
       color: #888;
     }
     
-    .recommendation {
-      background: #0f3460;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-      font-size: 13px;
-    }
-    
-    .recommendation.snap { border-left: 3px solid #00b4d8; }
-    .recommendation.keep { border-left: 3px solid #4caf50; }
-    .recommendation.consolidate { border-left: 3px solid #ff9800; }
+    /* Recommendation section removed */
     
     .actions {
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+    
+    .panel.compact {
+      padding: 10px;
+    }
+    
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    
+    .btn-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .btn-sm {
+      flex: 1;
+      padding: 8px 6px;
+      font-size: 11px;
+      white-space: nowrap;
     }
     
     button {
@@ -366,22 +377,22 @@
           <div class="trail-name" id="trail-name">No trail selected</div>
           <div class="trail-stats" id="trail-stats">-</div>
         </div>
-        <div class="recommendation" id="recommendation" style="display:none">
-          <strong>Recommendation:</strong> <span id="rec-text"></span>
-        </div>
       </div>
       
-      <div class="panel">
-        <div class="panel-title">Actions</div>
-        <div class="actions">
-          <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
-          <button class="btn-portage" id="btn-portage" disabled>🥾 Snap Portage</button>
-          <button class="btn-mark-portage" id="btn-mark-portage" disabled>🏕️ Mark Portage</button>
-          <button class="btn-clear-portages" id="btn-clear-portages" disabled>🗑️ Clear Portages</button>
-          <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
-          <button class="btn-simplify" id="btn-simplify" disabled>🔧 Simplify</button>
-          <button class="btn-create" id="btn-create">➕ Create New</button>
-          <button class="btn-secondary" id="btn-undo" disabled>Undo</button>
+      <div class="panel compact">
+        <div class="btn-row">
+          <button class="btn-sm btn-primary" id="btn-snap" disabled title="Snap to NHD">🌊 NHD</button>
+          <button class="btn-sm btn-portage" id="btn-portage" disabled title="Snap to Portage Trail">🥾 Portage</button>
+          <button class="btn-sm btn-edit" id="btn-edit" disabled title="Edit Trail">✏️ Edit</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn-sm btn-mark-portage" id="btn-mark-portage" disabled title="Mark Portage Section">🏕️ Mark</button>
+          <button class="btn-sm btn-clear-portages" id="btn-clear-portages" disabled title="Clear Portages">🗑️ Clear</button>
+          <button class="btn-sm btn-simplify" id="btn-simplify" disabled title="Simplify Trail">🔧 Simplify</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn-sm btn-create" id="btn-create" title="Create New Trail">➕ New</button>
+          <button class="btn-sm btn-secondary" id="btn-undo" disabled title="Undo Last Action">↩️ Undo</button>
         </div>
       </div>
       
@@ -629,8 +640,7 @@
     const progressText = document.getElementById('progress-text');
     const trailName = document.getElementById('trail-name');
     const trailStats = document.getElementById('trail-stats');
-    const recommendation = document.getElementById('recommendation');
-    const recText = document.getElementById('rec-text');
+    // Recommendation section removed
     const logEl = document.getElementById('log');
     const loading = document.getElementById('loading');
     
@@ -904,11 +914,7 @@
       trailName.textContent = data.trail.name;
       trailStats.textContent = `${Math.round(data.trail.lengthM)}m • ${data.nearbyNHD.length} nearby NHD`;
       
-      if (data.analysis.recommendation) {
-        recommendation.style.display = 'block';
-        recommendation.className = `recommendation ${data.analysis.recommendation}`;
-        recText.textContent = data.analysis.recommendation.replace(/_/g, ' ');
-      }
+      // Recommendation section removed
       
       btnSnap.disabled = data.nearbyNHD.length === 0;
       btnPortage.disabled = false;
