@@ -158,6 +158,11 @@
       color: #fff;
     }
     
+    .btn-portage {
+      background: #795548;
+      color: #fff;
+    }
+    
     .btn-create {
       background: #2196f3;
       color: #fff;
@@ -340,6 +345,7 @@
         <div class="panel-title">Actions</div>
         <div class="actions">
           <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
+          <button class="btn-portage" id="btn-portage" disabled>🥾 Snap Portage</button>
           <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
           <button class="btn-simplify" id="btn-simplify" disabled>🔧 Simplify</button>
           <button class="btn-create" id="btn-create">➕ Create New</button>
@@ -531,6 +537,7 @@
     const loading = document.getElementById('loading');
     
     const btnSnap = document.getElementById('btn-snap');
+    const btnPortage = document.getElementById('btn-portage');
     const btnEdit = document.getElementById('btn-edit');
     const btnSimplify = document.getElementById('btn-simplify');
     const btnCreate = document.getElementById('btn-create');
@@ -552,6 +559,7 @@
       if (trailSelect.value) loadTrail(trailSelect.value);
     };
     btnSnap.onclick = () => snapCurrentTrail();
+    btnPortage.onclick = () => snapToPortage();
     btnEdit.onclick = () => toggleEditMode();
     btnSimplify.onclick = () => simplifyTrail();
     btnCreate.onclick = () => showCreateModal();
@@ -805,6 +813,7 @@
       }
       
       btnSnap.disabled = data.nearbyNHD.length === 0;
+      btnPortage.disabled = false;
       btnEdit.disabled = false;
       btnSimplify.disabled = false;
       btnSkip.disabled = false;
@@ -957,6 +966,67 @@
         }
       } catch (err) {
         log('Simplify failed: ' + err.message, 'warning');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    async function snapToPortage() {
+      if (!currentTrail) return;
+      
+      showLoading(true);
+      log('Searching for portage trails in view...', 'info');
+      
+      try {
+        // Query Mapbox for path features in the current view
+        // Look for roads with class 'path', 'track', or 'footway'
+        const pathFeatures = map.queryRenderedFeatures({
+          layers: ['road-path', 'road-pedestrian', 'road-footway', 'road-steps']
+        });
+        
+        // Also try querying by source layer for the streets tileset
+        const allRoadFeatures = map.queryRenderedFeatures({
+          layers: map.getStyle().layers
+            .filter(l => l.id.includes('road') || l.id.includes('path'))
+            .map(l => l.id)
+        });
+        
+        // Filter for path-like features
+        const paths = allRoadFeatures.filter(f => {
+          const cls = f.properties.class || f.properties.type || '';
+          return ['path', 'track', 'footway', 'pedestrian', 'trail'].includes(cls);
+        });
+        
+        if (paths.length === 0) {
+          log('No portage/path features found in current view. Try zooming in.', 'warning');
+          showLoading(false);
+          return;
+        }
+        
+        // Extract geometries
+        const pathGeometries = paths.map(f => f.geometry);
+        
+        log(`Found ${paths.length} path segments. Snapping...`, 'info');
+        
+        const res = await fetch('/api/draw/snap-portage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trailId: currentTrail.id,
+            pathGeometries: pathGeometries,
+            tolerance: 50
+          })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Snapped to portage: ${data.pointsSnapped}/${data.totalPoints} points`, 'success');
+          await loadTrail(currentTrail.id);
+        } else {
+          log('Snap portage failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        log('Snap portage failed: ' + err.message, 'warning');
       } finally {
         showLoading(false);
       }

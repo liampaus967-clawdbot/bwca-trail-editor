@@ -402,6 +402,125 @@ router.post('/undo', async (req, res, next) => {
 });
 
 /**
+ * POST /api/draw/snap-portage
+ * Snap trail to Mapbox basemap path features
+ */
+router.post('/snap-portage', async (req, res, next) => {
+  try {
+    const { trailId, pathGeometries, tolerance = 50 } = req.body;
+    
+    if (!trailId || !pathGeometries || pathGeometries.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PARAMS', message: 'trailId and pathGeometries required' }
+      });
+    }
+    
+    // Get current trail geometry
+    const currentResult = await query(`
+      SELECT 
+        ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry,
+        ST_NPoints(COALESCE(edited_geometry, original_geometry)) as point_count
+      FROM trail_edits WHERE id = $1
+    `, [trailId]);
+    
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'TRAIL_NOT_FOUND', message: `Trail ${trailId} not found` }
+      });
+    }
+    
+    const oldGeometry = currentResult.rows[0].geometry;
+    const totalPoints = currentResult.rows[0].point_count;
+    
+    // Combine all path geometries into a single MultiLineString for snapping
+    const pathCollection = {
+      type: 'GeometryCollection',
+      geometries: pathGeometries
+    };
+    
+    // Snap using PostGIS - project each vertex to nearest point on paths
+    const snapResult = await query(`
+      WITH trail AS (
+        SELECT COALESCE(edited_geometry, original_geometry) as geom 
+        FROM trail_edits WHERE id = $1
+      ),
+      paths AS (
+        SELECT ST_Collect(
+          ST_SetSRID(ST_GeomFromGeoJSON(g::text), 4326)
+        ) as geom
+        FROM jsonb_array_elements($2::jsonb) as g
+      ),
+      -- Densify trail first
+      densified AS (
+        SELECT ST_Segmentize(t.geom::geography, 10)::geometry as geom
+        FROM trail t
+      ),
+      -- Extract vertices
+      vertices AS (
+        SELECT 
+          row_number() OVER () as idx,
+          (ST_DumpPoints(d.geom)).geom as pt
+        FROM densified d
+      ),
+      -- Snap each vertex to paths if within tolerance
+      snapped AS (
+        SELECT 
+          v.idx,
+          v.pt as original_pt,
+          ST_ClosestPoint(p.geom, v.pt) as path_pt,
+          ST_Distance(v.pt::geography, p.geom::geography) as dist_m
+        FROM vertices v, paths p
+      ),
+      -- Apply snapping
+      result_pts AS (
+        SELECT 
+          idx,
+          CASE WHEN dist_m <= $3 THEN path_pt ELSE original_pt END as final_pt,
+          dist_m <= $3 as was_snapped
+        FROM snapped
+        ORDER BY idx
+      )
+      SELECT 
+        ST_AsGeoJSON(
+          ST_RemoveRepeatedPoints(
+            ST_MakeLine(array_agg(final_pt ORDER BY idx)),
+            0.000005
+          )
+        )::json as snapped_geometry,
+        SUM(CASE WHEN was_snapped THEN 1 ELSE 0 END) as points_snapped,
+        COUNT(*) as total_points
+      FROM result_pts
+    `, [trailId, JSON.stringify(pathGeometries), tolerance]);
+    
+    const newGeometry = snapResult.rows[0].snapped_geometry;
+    const pointsSnapped = parseInt(snapResult.rows[0].points_snapped);
+    
+    // Save operation history
+    await saveOperation(trailId, 'snap_portage', { tolerance, pathCount: pathGeometries.length }, oldGeometry, newGeometry);
+    
+    // Update geometry
+    await updateTrailGeometry(trailId, newGeometry);
+    
+    // Notify via WebSocket
+    const io = req.app.get('io');
+    io.emit('trail:updated', { trailId, operation: 'snap_portage' });
+    
+    res.json({
+      success: true,
+      trailId,
+      pointsSnapped,
+      totalPoints: parseInt(snapResult.rows[0].total_points),
+      pathsUsed: pathGeometries.length
+    });
+    
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/draw/create
  * Create a new trail with geometry
  */
