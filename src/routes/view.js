@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { query } from '../services/database.js';
-import { takeScreenshot } from '../services/screenshot.js';
 import { findNearestNHD, analyzeTrail } from '../services/geometry.js';
 
 const router = Router();
@@ -183,19 +182,8 @@ router.get('/trail/:trailId', async (req, res, next) => {
       };
     }
     
-    // Screenshot is optional - may fail without Puppeteer/Chrome
+    // Screenshot disabled for performance - browser already shows the map
     let screenshot = null;
-    try {
-      screenshot = await takeScreenshot({
-        bounds,
-        layers: ['nhd', 'original', 'edited'],
-        highlightTrailId: trailId,
-        trailGeometries,
-        nhdGeometries
-      });
-    } catch (screenshotErr) {
-      console.warn('Screenshot failed (Puppeteer not available?):', screenshotErr.message);
-    }
     
     // Analyze trail
     const analysis = await analyzeTrail(trailId);
