@@ -27,6 +27,59 @@ async function updateTrailGeometry(trailId, newGeometry) {
       updated_at = NOW()
     WHERE id = $1
   `, [trailId, JSON.stringify(newGeometry)]);
+  
+  // Recalculate portage fractions based on new geometry
+  await recalculatePortageFractions(trailId);
+}
+
+/**
+ * Helper: Recalculate portage fractions after geometry change
+ * Uses stored coordinates to find new positions on the updated line
+ */
+async function recalculatePortageFractions(trailId) {
+  // Get current metadata
+  const result = await query(`
+    SELECT metadata FROM trail_edits WHERE id = $1
+  `, [trailId]);
+  
+  if (result.rows.length === 0) return;
+  
+  const metadata = result.rows[0].metadata || {};
+  if (!metadata.portages || metadata.portages.length === 0) return;
+  
+  // Recalculate fractions for each portage
+  for (const portage of metadata.portages) {
+    if (portage.startCoord && portage.endCoord) {
+      const fracResult = await query(`
+        WITH trail AS (
+          SELECT COALESCE(edited_geometry, original_geometry) as geom
+          FROM trail_edits WHERE id = $1
+        )
+        SELECT 
+          ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($2, $3), 4326)) as start_frac,
+          ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($4, $5), 4326)) as end_frac
+        FROM trail t
+      `, [trailId, portage.startCoord[0], portage.startCoord[1], portage.endCoord[0], portage.endCoord[1]]);
+      
+      if (fracResult.rows.length > 0) {
+        let startFrac = fracResult.rows[0].start_frac;
+        let endFrac = fracResult.rows[0].end_frac;
+        
+        // Ensure start < end
+        if (startFrac > endFrac) {
+          [startFrac, endFrac] = [endFrac, startFrac];
+        }
+        
+        portage.startFraction = startFrac;
+        portage.endFraction = endFrac;
+      }
+    }
+  }
+  
+  // Save updated metadata
+  await query(`
+    UPDATE trail_edits SET metadata = $2 WHERE id = $1
+  `, [trailId, JSON.stringify(metadata)]);
 }
 
 /**
@@ -434,7 +487,7 @@ router.post('/mark-portage', async (req, res, next) => {
     const trail = trailResult.rows[0];
     const metadata = trail.metadata || {};
     
-    // Find the line fractions for the clicked points
+    // Find the line fractions AND the actual points on the line for the clicked points
     const fractionResult = await query(`
       WITH trail AS (
         SELECT COALESCE(edited_geometry, original_geometry) as geom
@@ -442,16 +495,25 @@ router.post('/mark-portage', async (req, res, next) => {
       )
       SELECT 
         ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($2, $3), 4326)) as start_frac,
-        ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($4, $5), 4326)) as end_frac
+        ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($4, $5), 4326)) as end_frac,
+        ST_AsGeoJSON(ST_LineInterpolatePoint(t.geom, 
+          ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($2, $3), 4326))
+        ))::json as start_point_on_line,
+        ST_AsGeoJSON(ST_LineInterpolatePoint(t.geom, 
+          ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($4, $5), 4326))
+        ))::json as end_point_on_line
       FROM trail t
     `, [trailId, startPoint[0], startPoint[1], endPoint[0], endPoint[1]]);
     
     let startFrac = fractionResult.rows[0].start_frac;
     let endFrac = fractionResult.rows[0].end_frac;
+    let startCoord = fractionResult.rows[0].start_point_on_line.coordinates;
+    let endCoord = fractionResult.rows[0].end_point_on_line.coordinates;
     
     // Ensure start < end
     if (startFrac > endFrac) {
       [startFrac, endFrac] = [endFrac, startFrac];
+      [startCoord, endCoord] = [endCoord, startCoord];
     }
     
     // Find nearby portage landings to auto-detect attributes
@@ -473,10 +535,13 @@ router.post('/mark-portage', async (req, res, next) => {
       LIMIT 1
     `, [trailId, startFrac, endFrac]);
     
-    // Build portage info
+    // Build portage info - store BOTH fractions and coordinates
+    // Coordinates allow recalculating fractions after geometry changes
     let portageInfo = {
       startFraction: startFrac,
       endFraction: endFrac,
+      startCoord: startCoord,
+      endCoord: endCoord,
       markedAt: new Date().toISOString()
     };
     
