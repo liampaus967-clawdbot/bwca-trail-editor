@@ -706,8 +706,8 @@
             draw.add(feature);
             draw.changeMode('direct_select', { featureId: currentTrail.id });
             
-            // Hide the regular trail layers while editing
-            ['original-layer', 'edited-layer'].forEach(id => {
+            // Hide the regular trail layers while editing (including portage segments)
+            ['original-layer', 'edited-layer', 'portage-segments-layer'].forEach(id => {
               if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
             });
           }
