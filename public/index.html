@@ -365,6 +365,11 @@
       const res = await fetch(`/api/view/trail/${trailId}`);
       const data = await res.json();
       
+      if (!data.success || !data.trail) {
+        log(`Error loading trail: ${data.error?.message || 'Unknown error'}`, 'error');
+        return;
+      }
+      
       currentTrail = data.trail;
       
       trailName.textContent = data.trail.name;

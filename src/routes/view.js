@@ -183,13 +183,19 @@ router.get('/trail/:trailId', async (req, res, next) => {
       };
     }
     
-    const screenshot = await takeScreenshot({
-      bounds,
-      layers: ['nhd', 'original', 'edited'],
-      highlightTrailId: trailId,
-      trailGeometries,
-      nhdGeometries
-    });
+    // Screenshot is optional - may fail without Puppeteer/Chrome
+    let screenshot = null;
+    try {
+      screenshot = await takeScreenshot({
+        bounds,
+        layers: ['nhd', 'original', 'edited'],
+        highlightTrailId: trailId,
+        trailGeometries,
+        nhdGeometries
+      });
+    } catch (screenshotErr) {
+      console.warn('Screenshot failed (Puppeteer not available?):', screenshotErr.message);
+    }
     
     // Analyze trail
     const analysis = await analyzeTrail(trailId);
