@@ -57,6 +57,53 @@ app.get('/api/config', (req, res) => {
   });
 });
 
+// Portage landings reference layer
+app.get('/api/portage-landings', async (req, res, next) => {
+  try {
+    const { Pool } = await import('pg');
+    const pool = new Pool({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT || 5432,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    const result = await pool.query(`
+      SELECT 
+        id, name, portage_id, type,
+        distance_m, distance_rods, difficulty,
+        description,
+        ST_AsGeoJSON(geom)::json as geometry
+      FROM "boundary-waters".bwca_portage_landings
+    `);
+    
+    const geojson = {
+      type: 'FeatureCollection',
+      features: result.rows.map(r => ({
+        type: 'Feature',
+        geometry: r.geometry,
+        properties: {
+          id: r.id,
+          name: r.name,
+          portageId: r.portage_id,
+          type: r.type,
+          distanceM: r.distance_m,
+          distanceRods: r.distance_rods,
+          difficulty: r.difficulty,
+          description: r.description
+        }
+      }))
+    };
+    
+    res.json(geojson);
+    await pool.end();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Serve frontend
 app.get('/', (req, res) => {
   res.sendFile(join(__dirname, '../public/index.html'));

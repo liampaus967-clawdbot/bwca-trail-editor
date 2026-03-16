@@ -293,6 +293,21 @@
       border-radius: 2px;
     }
     
+    .legend-item.toggle {
+      cursor: pointer;
+    }
+    
+    .legend-item.toggle:hover {
+      background: rgba(255,255,255,0.1);
+      margin: -2px -5px;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    
+    .legend-item input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    
     .loading {
       display: none;
       position: absolute;
@@ -361,6 +376,11 @@
       </div>
       
       <div class="legend">
+        <div class="legend-item toggle" id="toggle-portages">
+          <input type="checkbox" id="chk-portages" checked>
+          <div class="legend-color" style="background: #e91e63; border-radius: 50%; width: 10px; height: 10px;"></div>
+          <span>Portage Landings</span>
+        </div>
         <div class="legend-item">
           <div class="legend-color" style="background: #0066ff"></div>
           <span>NHD Flowlines</span>
@@ -486,9 +506,68 @@
       // Wait for map to load
       map.on('load', async () => {
         await loadSession();
+        await loadPortageLandings();
         log('Ready! Click "Next Trail" to start editing.', 'success');
         log('💡 Tip: Click "Edit Trail" to drag vertices', 'info');
       });
+    }
+    
+    // Load portage landings reference layer
+    async function loadPortageLandings() {
+      try {
+        const res = await fetch('/api/portage-landings');
+        const geojson = await res.json();
+        
+        map.addSource('portage-landings', {
+          type: 'geojson',
+          data: geojson
+        });
+        
+        // Add circle layer for portage points
+        map.addLayer({
+          id: 'portage-landings-layer',
+          type: 'circle',
+          source: 'portage-landings',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': '#e91e63',
+            'circle-stroke-color': '#fff',
+            'circle-stroke-width': 2
+          }
+        });
+        
+        // Add popup on click
+        map.on('click', 'portage-landings-layer', (e) => {
+          const props = e.features[0].properties;
+          new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <strong>Portage ${props.name}</strong><br>
+              ${props.distanceM}m (${props.distanceRods} rods)<br>
+              Difficulty: ${props.difficulty || 'unknown'}
+            `)
+            .addTo(map);
+        });
+        
+        // Change cursor on hover
+        map.on('mouseenter', 'portage-landings-layer', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'portage-landings-layer', () => {
+          map.getCanvas().style.cursor = '';
+        });
+        
+        log(`Loaded ${geojson.features.length} portage landings`, 'info');
+        
+        // Set up toggle
+        document.getElementById('chk-portages').addEventListener('change', (e) => {
+          map.setLayoutProperty('portage-landings-layer', 'visibility', 
+            e.target.checked ? 'visible' : 'none');
+        });
+        
+      } catch (err) {
+        console.error('Failed to load portage landings:', err);
+      }
     }
     
     // Handle draw updates (when user drags a vertex)
