@@ -70,6 +70,36 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
+ * GET /api/session/trails
+ * Get all trails for dropdown
+ */
+router.get('/trails', async (req, res, next) => {
+  try {
+    const result = await query(`
+      SELECT 
+        id,
+        trail_name,
+        status,
+        ST_Length(original_geometry::geography) as length_m
+      FROM trail_edits
+      ORDER BY id
+    `);
+    
+    res.json({
+      success: true,
+      trails: result.rows.map(r => ({
+        id: r.id,
+        name: r.trail_name,
+        status: r.status,
+        lengthM: parseFloat(r.length_m)
+      }))
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * GET /api/queue/next
  * Get next trail to work on
  */

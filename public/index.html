@@ -141,6 +141,27 @@
       border: 1px solid #333;
     }
     
+    .trail-select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      background: #16213e;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    
+    .trail-select:focus {
+      outline: none;
+      border-color: #00b4d8;
+    }
+    
+    .trail-select option {
+      background: #16213e;
+      color: #fff;
+    }
+    
     .log {
       flex: 1;
       overflow-y: auto;
@@ -212,6 +233,13 @@
           <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
         </div>
         <div class="progress-text" id="progress-text">Loading...</div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-title">Select Trail</div>
+        <select id="trail-select" class="trail-select">
+          <option value="">-- Choose a trail --</option>
+        </select>
       </div>
       
       <div class="panel">
@@ -304,9 +332,13 @@
     const btnNext = document.getElementById('btn-next');
     const btnUndo = document.getElementById('btn-undo');
     const btnSkip = document.getElementById('btn-skip');
+    const trailSelect = document.getElementById('trail-select');
     
     // Event listeners
     btnNext.onclick = () => loadNextTrail();
+    trailSelect.onchange = () => {
+      if (trailSelect.value) loadTrail(trailSelect.value);
+    };
     btnSnap.onclick = () => snapCurrentTrail();
     btnUndo.onclick = () => undoLast();
     btnSkip.onclick = () => skipTrail();
@@ -330,6 +362,23 @@
       const res = await fetch('/api/session');
       session = await res.json();
       updateProgress();
+      await populateTrailDropdown();
+    }
+    
+    async function populateTrailDropdown() {
+      const res = await fetch('/api/session/trails');
+      const data = await res.json();
+      
+      trailSelect.innerHTML = '<option value="">-- Choose a trail --</option>';
+      
+      if (data.trails) {
+        data.trails.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = `${t.id} - ${t.name} (${Math.round(t.lengthM / 1000)}km) [${t.status}]`;
+          trailSelect.appendChild(opt);
+        });
+      }
     }
     
     function updateProgress() {
