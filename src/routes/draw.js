@@ -402,6 +402,82 @@ router.post('/undo', async (req, res, next) => {
 });
 
 /**
+ * POST /api/draw/simplify
+ * Simplify trail geometry (reduce vertices)
+ */
+router.post('/simplify', async (req, res, next) => {
+  try {
+    const { trailId, tolerance = 50 } = req.body;
+    
+    if (!trailId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PARAMS', message: 'trailId required' }
+      });
+    }
+    
+    // Get current geometry and point count
+    const currentResult = await query(`
+      SELECT 
+        ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry,
+        ST_NPoints(COALESCE(edited_geometry, original_geometry)) as point_count
+      FROM trail_edits WHERE id = $1
+    `, [trailId]);
+    
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'TRAIL_NOT_FOUND', message: `Trail ${trailId} not found` }
+      });
+    }
+    
+    const oldGeometry = currentResult.rows[0].geometry;
+    const originalPoints = currentResult.rows[0].point_count;
+    
+    // Convert tolerance from meters to degrees (approximate)
+    const toleranceDegrees = tolerance / 111000;
+    
+    // Simplify and get new geometry
+    const simplifyResult = await query(`
+      SELECT 
+        ST_AsGeoJSON(ST_Simplify(
+          COALESCE(edited_geometry, original_geometry),
+          $2
+        ))::json as geometry,
+        ST_NPoints(ST_Simplify(
+          COALESCE(edited_geometry, original_geometry),
+          $2
+        )) as point_count
+      FROM trail_edits WHERE id = $1
+    `, [trailId, toleranceDegrees]);
+    
+    const newGeometry = simplifyResult.rows[0].geometry;
+    const newPoints = simplifyResult.rows[0].point_count;
+    
+    // Save operation history
+    await saveOperation(trailId, 'simplify', { tolerance }, oldGeometry, newGeometry);
+    
+    // Update geometry
+    await updateTrailGeometry(trailId, newGeometry);
+    
+    // Notify via WebSocket
+    const io = req.app.get('io');
+    io.emit('trail:updated', { trailId, operation: 'simplify' });
+    
+    res.json({
+      success: true,
+      trailId,
+      originalPoints,
+      newPoints,
+      reduction: Math.round((1 - newPoints / originalPoints) * 100) + '%'
+    });
+    
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/draw/update-geometry
  * Update trail geometry (from manual editing)
  */

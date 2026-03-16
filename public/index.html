@@ -153,6 +153,11 @@
       box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
     }
     
+    .btn-simplify {
+      background: #9c27b0;
+      color: #fff;
+    }
+    
     .trail-select {
       width: 100%;
       padding: 10px;
@@ -270,6 +275,7 @@
         <div class="actions">
           <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
           <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
+          <button class="btn-simplify" id="btn-simplify" disabled>🔧 Simplify</button>
           <button class="btn-secondary" id="btn-next">Next Trail</button>
           <button class="btn-secondary" id="btn-undo" disabled>Undo</button>
           <button class="btn-skip" id="btn-skip" disabled>Skip Trail</button>
@@ -444,6 +450,7 @@
     
     const btnSnap = document.getElementById('btn-snap');
     const btnEdit = document.getElementById('btn-edit');
+    const btnSimplify = document.getElementById('btn-simplify');
     const btnNext = document.getElementById('btn-next');
     const btnUndo = document.getElementById('btn-undo');
     const btnSkip = document.getElementById('btn-skip');
@@ -456,6 +463,7 @@
     };
     btnSnap.onclick = () => snapCurrentTrail();
     btnEdit.onclick = () => toggleEditMode();
+    btnSimplify.onclick = () => simplifyTrail();
     btnUndo.onclick = () => undoLast();
     btnSkip.onclick = () => skipTrail();
     
@@ -602,6 +610,7 @@
       
       btnSnap.disabled = data.nearbyNHD.length === 0;
       btnEdit.disabled = false;
+      btnSimplify.disabled = false;
       btnSkip.disabled = false;
       btnUndo.disabled = false;
       
@@ -721,6 +730,37 @@
         
       } catch (err) {
         log('Snap failed: ' + err.message, 'warning');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    async function simplifyTrail() {
+      if (!currentTrail) return;
+      
+      const tolerance = prompt('Simplification tolerance in meters (higher = fewer points):', '50');
+      if (!tolerance) return;
+      
+      showLoading(true);
+      try {
+        const res = await fetch('/api/draw/simplify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trailId: currentTrail.id,
+            tolerance: parseFloat(tolerance)
+          })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Simplified: ${data.originalPoints} → ${data.newPoints} points`, 'success');
+          await loadTrail(currentTrail.id);
+        } else {
+          log('Simplify failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        log('Simplify failed: ' + err.message, 'warning');
       } finally {
         showLoading(false);
       }
