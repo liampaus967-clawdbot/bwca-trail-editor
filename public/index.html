@@ -439,6 +439,11 @@
           <div class="legend-color" style="background: #e91e63; border-radius: 50%; width: 10px; height: 10px;"></div>
           <span>Portage Landings</span>
         </div>
+        <div class="legend-item toggle" id="toggle-full-network">
+          <input type="checkbox" id="chk-full-network">
+          <div class="legend-color" style="background: #66bb6a"></div>
+          <span>Full Trail Network</span>
+        </div>
         <div class="legend-item">
           <div class="legend-color" style="background: #0066ff"></div>
           <span>NHD Flowlines</span>
@@ -569,8 +574,9 @@
       map.on('load', async () => {
         await loadSession();
         await loadPortageLandings();
-        log('Ready! Click "Next Trail" to start editing.', 'success');
-        log('💡 Tip: Click "Edit Trail" to drag vertices', 'info');
+        await loadFullTrailNetwork();
+        log('Ready! Select a trail to start editing.', 'success');
+        log('💡 Tip: Toggle "Full Trail Network" to see all edited trails', 'info');
       });
     }
     
@@ -629,6 +635,50 @@
         
       } catch (err) {
         console.error('Failed to load portage landings:', err);
+      }
+    }
+    
+    // Load full edited trail network layer
+    async function loadFullTrailNetwork() {
+      try {
+        const res = await fetch('/api/view/all-edited');
+        const geojson = await res.json();
+        
+        if (!geojson.features || geojson.features.length === 0) {
+          log('No edited trails found for network layer', 'info');
+          return;
+        }
+        
+        map.addSource('full-trail-network', {
+          type: 'geojson',
+          data: geojson
+        });
+        
+        // Add line layer for the full network (lighter green, thinner)
+        map.addLayer({
+          id: 'full-trail-network-layer',
+          type: 'line',
+          source: 'full-trail-network',
+          layout: {
+            'visibility': 'none'  // Hidden by default
+          },
+          paint: {
+            'line-color': '#66bb6a',
+            'line-width': 2,
+            'line-opacity': 0.7
+          }
+        }, 'portage-landings-layer');  // Insert below portage landings
+        
+        log(`Loaded ${geojson.features.length} edited trails for network overlay`, 'info');
+        
+        // Set up toggle
+        document.getElementById('chk-full-network').addEventListener('change', (e) => {
+          map.setLayoutProperty('full-trail-network-layer', 'visibility', 
+            e.target.checked ? 'visible' : 'none');
+        });
+        
+      } catch (err) {
+        console.error('Failed to load full trail network:', err);
       }
     }
     

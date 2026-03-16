@@ -207,4 +207,37 @@ router.get('/trail/:trailId', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/view/all-edited
+ * Get all edited trail geometries for the full network overlay
+ */
+router.get('/all-edited', async (req, res, next) => {
+  try {
+    const result = await query(`
+      SELECT 
+        id,
+        trail_name,
+        ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry
+      FROM trail_edits
+      WHERE edited_geometry IS NOT NULL
+      ORDER BY id
+    `);
+    
+    res.json({
+      success: true,
+      type: 'FeatureCollection',
+      features: result.rows.map(r => ({
+        type: 'Feature',
+        geometry: r.geometry,
+        properties: {
+          id: r.id,
+          name: r.trail_name
+        }
+      }))
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
