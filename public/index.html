@@ -13,18 +13,12 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     
-    .container {
-      display: flex;
-      height: 100vh;
-    }
+    .container { display: flex; height: 100vh; }
+    #map { flex: 1; height: 100%; }
     
-    #map {
-      flex: 1;
-      height: 100%;
-    }
-    
+    /* Sidebar - narrower, cleaner */
     .sidebar {
-      width: 350px;
+      width: 280px;
       background: #1a1a2e;
       color: #fff;
       display: flex;
@@ -33,26 +27,21 @@
     }
     
     .sidebar-header {
-      padding: 20px;
+      padding: 16px;
       background: #16213e;
       border-bottom: 1px solid #0f3460;
     }
     
     .sidebar-header h1 {
-      font-size: 18px;
-      margin-bottom: 5px;
-    }
-    
-    .sidebar-header .subtitle {
-      font-size: 12px;
-      color: #888;
+      font-size: 16px;
+      font-weight: 600;
     }
     
     .progress-bar {
-      margin-top: 15px;
+      margin-top: 12px;
       background: #0f3460;
       border-radius: 4px;
-      height: 8px;
+      height: 6px;
       overflow: hidden;
     }
     
@@ -63,175 +52,132 @@
     }
     
     .progress-text {
-      font-size: 11px;
-      color: #888;
-      margin-top: 5px;
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
     }
     
-    .panel {
-      padding: 15px;
+    /* Trail selector */
+    .trail-selector {
+      padding: 12px;
       border-bottom: 1px solid #0f3460;
     }
     
-    .panel-title {
+    .trail-select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      background: #16213e;
+      color: #fff;
       font-size: 12px;
-      text-transform: uppercase;
-      color: #888;
-      margin-bottom: 10px;
+      cursor: pointer;
     }
     
+    .trail-select:focus { outline: none; border-color: #00b4d8; }
+    
+    /* Current trail info - compact */
     .trail-info {
-      background: #16213e;
       padding: 12px;
-      border-radius: 6px;
-      margin-bottom: 10px;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
     }
+    
+    .trail-info.empty { display: none; }
     
     .trail-name {
       font-weight: 600;
-      margin-bottom: 5px;
+      font-size: 14px;
+      margin-bottom: 4px;
     }
     
     .trail-stats {
-      font-size: 12px;
-      color: #888;
-    }
-    
-    /* Recommendation section removed */
-    
-    .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .panel.compact {
-      padding: 10px;
-    }
-    
-    .btn-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
-    
-    .btn-row:last-child {
-      margin-bottom: 0;
-    }
-    
-    .btn-sm {
-      flex: 1;
-      padding: 8px 6px;
       font-size: 11px;
-      white-space: nowrap;
+      color: #888;
     }
     
     .status-toggle {
-      display: none;
+      display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: #0f3460;
-      border-radius: 6px;
+      margin-top: 8px;
+      font-size: 12px;
       cursor: pointer;
-      font-size: 13px;
     }
     
-    .status-toggle.show {
+    .status-toggle input { cursor: pointer; }
+    .status-toggle.completed { color: #4caf50; }
+    
+    /* Tool sections */
+    .tool-section {
+      border-bottom: 1px solid #0f3460;
+    }
+    
+    .tool-header {
       display: flex;
-    }
-    
-    .status-toggle input {
-      width: 18px;
-      height: 18px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
       cursor: pointer;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #888;
+      background: #1a1a2e;
+      transition: background 0.2s;
     }
     
-    .status-toggle.completed {
-      background: #1b5e20;
+    .tool-header:hover { background: #16213e; }
+    
+    .tool-header .chevron {
+      transition: transform 0.2s;
     }
     
-    button {
-      padding: 10px 15px;
+    .tool-section.collapsed .tool-header .chevron {
+      transform: rotate(-90deg);
+    }
+    
+    .tool-content {
+      padding: 8px 12px 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    
+    .tool-section.collapsed .tool-content {
+      display: none;
+    }
+    
+    /* Tool buttons - icon focused */
+    .tool-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 4px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 9px;
       font-weight: 500;
       transition: all 0.2s;
-    }
-    
-    button:hover { transform: translateY(-1px); }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #00b4d8, #0077b6);
-      color: #fff;
-    }
-    
-    .btn-secondary {
       background: #0f3460;
       color: #fff;
     }
     
-    .btn-skip {
-      background: transparent;
-      color: #888;
-      border: 1px solid #333;
-    }
+    .tool-btn:hover { transform: translateY(-1px); filter: brightness(1.2); }
+    .tool-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .tool-btn .icon { font-size: 18px; margin-bottom: 4px; }
     
-    .btn-edit {
-      background: #ff9800;
-      color: #fff;
-    }
+    .tool-btn.primary { background: linear-gradient(135deg, #00b4d8, #0077b6); }
+    .tool-btn.warning { background: #ff9800; }
+    .tool-btn.danger { background: #f44336; }
+    .tool-btn.success { background: #4caf50; }
+    .tool-btn.purple { background: #9c27b0; }
+    .tool-btn.pink { background: #ff69b4; }
+    .tool-btn.brown { background: #795548; }
     
-    .btn-edit.active {
-      background: #4caf50;
-      box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-    }
-    
-    .btn-simplify {
-      background: #9c27b0;
-      color: #fff;
-    }
-    
-    .btn-portage {
-      background: #795548;
-      color: #fff;
-    }
-    
-    .btn-mark-portage {
-      background: #607d8b;
-      color: #fff;
-    }
-    
-    .btn-mark-portage.active {
-      background: #ff5722;
-      animation: pulse 1s infinite;
-    }
-    
-    .btn-clear-portages {
-      background: #f44336;
-      color: #fff;
-    }
-    
-    .btn-create {
-      background: #2196f3;
-      color: #fff;
-    }
-    
-    .btn-create.drawing {
-      background: #4caf50;
-      animation: pulse 1s infinite;
-    }
-    
-    .btn-snap-trail {
-      background: #ff69b4;
-      color: #fff;
-    }
-    
-    .btn-snap-trail.active {
-      background: #e91e63;
+    .tool-btn.active {
+      box-shadow: 0 0 12px currentColor;
       animation: pulse 1s infinite;
     }
     
@@ -240,88 +186,32 @@
       50% { opacity: 0.7; }
     }
     
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .modal.show {
+    /* Activity log - minimal */
+    .log-section {
+      flex: 1;
+      overflow: hidden;
       display: flex;
+      flex-direction: column;
     }
     
-    .modal-content {
-      background: #1a1a2e;
-      padding: 25px;
-      border-radius: 10px;
-      min-width: 350px;
-      color: #fff;
-    }
-    
-    .modal-content h3 {
-      margin-bottom: 15px;
-    }
-    
-    .modal-content input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #0f3460;
-      border-radius: 6px;
-      background: #16213e;
-      color: #fff;
-      font-size: 14px;
-    }
-    
-    .modal-content input:focus {
-      outline: none;
-      border-color: #00b4d8;
-    }
-    
-    .modal-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-    
-    .trail-select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #0f3460;
-      border-radius: 6px;
-      background: #16213e;
-      color: #fff;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    
-    .trail-select:focus {
-      outline: none;
-      border-color: #00b4d8;
-    }
-    
-    .trail-select option {
-      background: #16213e;
-      color: #fff;
+    .log-header {
+      padding: 10px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #888;
+      border-bottom: 1px solid #0f3460;
     }
     
     .log {
       flex: 1;
       overflow-y: auto;
-      padding: 15px;
+      padding: 8px;
     }
     
     .log-entry {
-      font-size: 12px;
-      padding: 8px;
-      margin-bottom: 5px;
+      font-size: 11px;
+      padding: 6px 8px;
+      margin-bottom: 4px;
       background: #16213e;
       border-radius: 4px;
       border-left: 3px solid #333;
@@ -330,56 +220,131 @@
     .log-entry.success { border-left-color: #4caf50; }
     .log-entry.info { border-left-color: #00b4d8; }
     .log-entry.warning { border-left-color: #ff9800; }
+    .log-entry.error { border-left-color: #f44336; }
     
-    .log-time {
-      color: #666;
-      font-size: 10px;
-    }
+    .log-time { color: #555; font-size: 9px; margin-top: 2px; }
     
+    /* Floating legend on map */
     .legend {
-      padding: 15px;
-      background: #16213e;
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      background: rgba(26, 26, 46, 0.95);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11px;
+      z-index: 100;
+      max-width: 180px;
     }
+    
+    .legend-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .legend-toggle {
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .legend.collapsed .legend-items { display: none; }
     
     .legend-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 12px;
-      margin-bottom: 5px;
+      padding: 3px 0;
+      color: #ccc;
     }
+    
+    .legend-item.toggle { cursor: pointer; }
+    .legend-item.toggle:hover { color: #fff; }
     
     .legend-color {
-      width: 20px;
+      width: 16px;
       height: 3px;
       border-radius: 2px;
+      flex-shrink: 0;
     }
     
-    .legend-item.toggle {
+    .legend-color.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.show { display: flex; }
+    
+    .modal-content {
+      background: #1a1a2e;
+      padding: 20px;
+      border-radius: 10px;
+      min-width: 300px;
+      color: #fff;
+    }
+    
+    .modal-content h3 { margin-bottom: 15px; font-size: 16px; }
+    
+    .modal-content label { font-size: 12px; color: #888; }
+    
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 4px 0 12px;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      background: #16213e;
+      color: #fff;
+      font-size: 13px;
+    }
+    
+    .modal-content input:focus { outline: none; border-color: #00b4d8; }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+    
+    .modal-buttons button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 12px;
     }
     
-    .legend-item.toggle:hover {
-      background: rgba(255,255,255,0.1);
-      margin: -2px -5px;
-      padding: 2px 5px;
-      border-radius: 4px;
-    }
+    .modal-buttons .btn-cancel { background: #0f3460; color: #fff; }
+    .modal-buttons .btn-confirm { background: #00b4d8; color: #fff; }
     
-    .legend-item input[type="checkbox"] {
-      margin-right: 5px;
-    }
-    
+    /* Loading overlay */
     .loading {
       display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
+      position: fixed;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.8);
-      padding: 20px 40px;
+      background: rgba(0,0,0,0.9);
+      padding: 16px 32px;
       border-radius: 8px;
       color: #fff;
+      font-size: 13px;
       z-index: 1000;
     }
     
@@ -393,89 +358,133 @@
     <div class="sidebar">
       <div class="sidebar-header">
         <h1>🛶 BWCA Trail Editor</h1>
-        <div class="subtitle">AI-Assisted GIS Tool</div>
         <div class="progress-bar">
           <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
         </div>
         <div class="progress-text" id="progress-text">Loading...</div>
       </div>
       
-      <div class="panel">
-        <div class="panel-title">Select Trail</div>
+      <div class="trail-selector">
         <select id="trail-select" class="trail-select">
-          <option value="">-- Choose a trail --</option>
+          <option value="">Select a trail...</option>
         </select>
       </div>
       
-      <div class="panel">
-        <div class="panel-title">Current Trail</div>
-        <div class="trail-info" id="trail-info">
-          <div class="trail-name" id="trail-name">No trail selected</div>
-          <div class="trail-stats" id="trail-stats">-</div>
-        </div>
+      <div class="trail-info" id="trail-info-panel">
+        <div class="trail-name" id="trail-name">No trail selected</div>
+        <div class="trail-stats" id="trail-stats">-</div>
         <label class="status-toggle" id="status-toggle">
           <input type="checkbox" id="chk-complete">
-          <span>✅ Mark Complete</span>
+          <span>Mark Complete</span>
         </label>
       </div>
       
-      <div class="panel compact">
-        <div class="btn-row">
-          <button class="btn-sm btn-primary" id="btn-snap" disabled title="Snap to NHD">🌊 NHD</button>
-          <button class="btn-sm btn-portage" id="btn-portage" disabled title="Snap to Portage Trail">🥾 Portage</button>
-          <button class="btn-sm btn-snap-trail" id="btn-snap-trail" disabled title="Snap to Another Trail">🔗 Trail</button>
+      <!-- Snap Tools -->
+      <div class="tool-section" id="snap-tools">
+        <div class="tool-header" onclick="toggleSection('snap-tools')">
+          <span>Snap Tools</span>
+          <span class="chevron">▼</span>
         </div>
-        <div class="btn-row">
-          <button class="btn-sm btn-edit" id="btn-edit" disabled title="Edit Trail">✏️ Edit</button>
-        <div class="btn-row">
-          <button class="btn-sm btn-mark-portage" id="btn-mark-portage" disabled title="Mark Portage Section">🏕️ Mark</button>
-          <button class="btn-sm btn-clear-portages" id="btn-clear-portages" disabled title="Clear Portages">🗑️ Clear</button>
-          <button class="btn-sm btn-simplify" id="btn-simplify" disabled title="Simplify Trail">🔧 Simplify</button>
-        </div>
-        <div class="btn-row">
-          <button class="btn-sm btn-create" id="btn-create" title="Create New Trail">➕ New</button>
-          <button class="btn-sm btn-secondary" id="btn-undo" disabled title="Undo Last Action">↩️ Undo</button>
-        </div>
-      </div>
-      
-      <div class="log" id="log">
-        <div class="log-entry info">
-          <div>Welcome! Click "Next Trail" to begin.</div>
-          <div class="log-time">System</div>
+        <div class="tool-content">
+          <button class="tool-btn primary" id="btn-snap" disabled title="Snap to NHD flowlines">
+            <span class="icon">🌊</span>
+            NHD
+          </button>
+          <button class="tool-btn brown" id="btn-portage" disabled title="Snap to portage path">
+            <span class="icon">🥾</span>
+            Portage
+          </button>
+          <button class="tool-btn pink" id="btn-snap-trail" disabled title="Connect to another trail">
+            <span class="icon">🔗</span>
+            Trail
+          </button>
         </div>
       </div>
       
-      <div class="legend">
-        <div class="legend-item toggle" id="toggle-portages">
-          <input type="checkbox" id="chk-portages" checked>
-          <div class="legend-color" style="background: #e91e63; border-radius: 50%; width: 10px; height: 10px;"></div>
-          <span>Portage Landings</span>
+      <!-- Edit Tools -->
+      <div class="tool-section" id="edit-tools">
+        <div class="tool-header" onclick="toggleSection('edit-tools')">
+          <span>Edit Tools</span>
+          <span class="chevron">▼</span>
         </div>
-        <div class="legend-item toggle" id="toggle-full-network">
-          <input type="checkbox" id="chk-full-network">
-          <div class="legend-color" style="background: #ff69b4"></div>
-          <span>Full Trail Network</span>
+        <div class="tool-content">
+          <button class="tool-btn warning" id="btn-edit" disabled title="Drag vertices to edit">
+            <span class="icon">✏️</span>
+            Edit
+          </button>
+          <button class="tool-btn purple" id="btn-simplify" disabled title="Reduce vertices">
+            <span class="icon">〰️</span>
+            Simplify
+          </button>
+          <button class="tool-btn" id="btn-undo" disabled title="Undo last action">
+            <span class="icon">↩️</span>
+            Undo
+          </button>
         </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #0066ff"></div>
-          <span>NHD Flowlines</span>
+      </div>
+      
+      <!-- Portage Tools -->
+      <div class="tool-section collapsed" id="portage-tools">
+        <div class="tool-header" onclick="toggleSection('portage-tools')">
+          <span>Portage Markers</span>
+          <span class="chevron">▼</span>
         </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #ff3333"></div>
-          <span>Original Trail</span>
+        <div class="tool-content">
+          <button class="tool-btn" id="btn-mark-portage" disabled title="Mark a portage section">
+            <span class="icon">🏕️</span>
+            Mark
+          </button>
+          <button class="tool-btn danger" id="btn-clear-portages" disabled title="Clear all portages">
+            <span class="icon">🗑️</span>
+            Clear
+          </button>
+          <button class="tool-btn success" id="btn-create" title="Draw new trail">
+            <span class="icon">➕</span>
+            New
+          </button>
         </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #00cc44"></div>
-          <span>Edited Trail</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #ff9800; height: 5px;"></div>
-          <span>Portage Section</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #ffcc00"></div>
-          <span>Current Working</span>
-        </div>
+      </div>
+      
+      <!-- Activity Log -->
+      <div class="log-section">
+        <div class="log-header">Activity</div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Floating Legend -->
+  <div class="legend" id="legend">
+    <div class="legend-title">
+      <span>Layers</span>
+      <span class="legend-toggle" onclick="toggleLegend()">−</span>
+    </div>
+    <div class="legend-items">
+      <label class="legend-item toggle">
+        <input type="checkbox" id="chk-portages" checked>
+        <div class="legend-color dot" style="background: #e91e63"></div>
+        <span>Portage Landings</span>
+      </label>
+      <label class="legend-item toggle">
+        <input type="checkbox" id="chk-full-network">
+        <div class="legend-color" style="background: #ff69b4"></div>
+        <span>Full Network</span>
+      </label>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #0066ff"></div>
+        <span>NHD Flowlines</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ff3333; border-style: dashed"></div>
+        <span>Original</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #00cc44"></div>
+        <span>Edited</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: #ff9800; height: 5px"></div>
+        <span>Portage Section</span>
       </div>
     </div>
   </div>
@@ -485,19 +494,30 @@
   <!-- Create Trail Modal -->
   <div class="modal" id="create-modal">
     <div class="modal-content">
-      <h3>➕ Create New Trail</h3>
-      <label>Trail Name:</label>
+      <h3>Create New Trail</h3>
+      <label>Trail Name</label>
       <input type="text" id="new-trail-name" placeholder="e.g., Knife Lake Portage">
-      <label>Trail ID (optional):</label>
+      <label>Trail ID (optional)</label>
       <input type="text" id="new-trail-id" placeholder="Auto-generated if empty">
       <div class="modal-buttons">
-        <button class="btn-secondary" id="modal-cancel">Cancel</button>
-        <button class="btn-primary" id="modal-start-draw">Start Drawing</button>
+        <button class="btn-cancel" id="modal-cancel">Cancel</button>
+        <button class="btn-confirm" id="modal-start-draw">Start Drawing</button>
       </div>
     </div>
   </div>
 
   <script>
+    // UI helpers
+    function toggleSection(id) {
+      document.getElementById(id).classList.toggle('collapsed');
+    }
+    
+    function toggleLegend() {
+      const legend = document.getElementById('legend');
+      legend.classList.toggle('collapsed');
+      document.querySelector('.legend-toggle').textContent = legend.classList.contains('collapsed') ? '+' : '−';
+    }
+    
     // State
     let map = null;
     let draw = null;
@@ -507,11 +527,9 @@
     
     // Initialize app
     async function initApp() {
-      // Fetch config from server
       const configRes = await fetch('/api/config');
       const config = await configRes.json();
       
-      // Initialize Mapbox
       mapboxgl.accessToken = config.mapboxToken;
       
       map = new mapboxgl.Map({
@@ -521,26 +539,17 @@
         zoom: 8
       });
       
-      // Initialize Mapbox Draw for polyline editing
       draw = new MapboxDraw({
         displayControlsDefault: false,
-        controls: {
-          line_string: false,
-          trash: true
-        },
+        controls: { line_string: false, trash: true },
         defaultMode: 'simple_select',
         styles: [
-          // Line style
           {
             id: 'gl-draw-line',
             type: 'line',
             filter: ['all', ['==', '$type', 'LineString']],
-            paint: {
-              'line-color': '#ffcc00',
-              'line-width': 4
-            }
+            paint: { 'line-color': '#ffcc00', 'line-width': 4 }
           },
-          // Vertex points
           {
             id: 'gl-draw-point',
             type: 'circle',
@@ -552,58 +561,44 @@
               'circle-stroke-width': 2
             }
           },
-          // Midpoints
           {
             id: 'gl-draw-point-midpoint',
             type: 'circle',
             filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint']],
-            paint: {
-              'circle-radius': 4,
-              'circle-color': '#ffcc00'
-            }
+            paint: { 'circle-radius': 4, 'circle-color': '#ffcc00' }
           }
         ]
       });
       
       map.addControl(draw, 'top-left');
-      
-      // Listen for draw updates
       map.on('draw.update', handleDrawUpdate);
-      map.on('draw.selectionchange', handleDrawSelection);
       
-      // Socket.io
       const socket = io();
-      
       socket.on('trail:updated', (data) => {
-        log(`Trail ${data.trailId} updated (${data.operation})`, 'success');
-        // Don't reload while editing - user is actively modifying
+        log(`Trail ${data.trailId} updated`, 'success');
         if (data.trailId === currentTrail?.id && !isEditing) {
           loadTrail(data.trailId);
         }
       });
       
-      // Wait for map to load
       map.on('load', async () => {
         await loadSession();
         await loadPortageLandings();
         await loadFullTrailNetwork();
-        log('Ready! Select a trail to start editing.', 'success');
-        log('💡 Tip: Toggle "Full Trail Network" to see all edited trails', 'info');
+        log('Ready! Select a trail to begin.', 'success');
       });
     }
     
-    // Load portage landings reference layer
+    initApp();
+    
+    // Load portage landings
     async function loadPortageLandings() {
       try {
         const res = await fetch('/api/portage-landings');
         const geojson = await res.json();
         
-        map.addSource('portage-landings', {
-          type: 'geojson',
-          data: geojson
-        });
+        map.addSource('portage-landings', { type: 'geojson', data: geojson });
         
-        // Add circle layer for portage points
         map.addLayer({
           id: 'portage-landings-layer',
           type: 'circle',
@@ -616,33 +611,16 @@
           }
         });
         
-        // Add popup on click
         map.on('click', 'portage-landings-layer', (e) => {
           const props = e.features[0].properties;
           new mapboxgl.Popup()
             .setLngLat(e.lngLat)
-            .setHTML(`
-              <strong>Portage ${props.name}</strong><br>
-              ${props.distanceM}m (${props.distanceRods} rods)<br>
-              Difficulty: ${props.difficulty || 'unknown'}
-            `)
+            .setHTML(`<strong>Portage ${props.name}</strong><br>${props.distanceM}m (${props.distanceRods} rods)`)
             .addTo(map);
         });
         
-        // Change cursor on hover
-        map.on('mouseenter', 'portage-landings-layer', () => {
-          map.getCanvas().style.cursor = 'pointer';
-        });
-        map.on('mouseleave', 'portage-landings-layer', () => {
-          map.getCanvas().style.cursor = '';
-        });
-        
-        log(`Loaded ${geojson.features.length} portage landings`, 'info');
-        
-        // Set up toggle
         document.getElementById('chk-portages').addEventListener('change', (e) => {
-          map.setLayoutProperty('portage-landings-layer', 'visibility', 
-            e.target.checked ? 'visible' : 'none');
+          map.setLayoutProperty('portage-landings-layer', 'visibility', e.target.checked ? 'visible' : 'none');
         });
         
       } catch (err) {
@@ -650,43 +628,26 @@
       }
     }
     
-    // Load full edited trail network layer
+    // Load full trail network
     async function loadFullTrailNetwork() {
       try {
         const res = await fetch('/api/view/all-edited');
         const geojson = await res.json();
         
-        if (!geojson.features || geojson.features.length === 0) {
-          log('No edited trails found for network layer', 'info');
-          return;
-        }
+        if (!geojson.features || geojson.features.length === 0) return;
         
-        map.addSource('full-trail-network', {
-          type: 'geojson',
-          data: geojson
-        });
+        map.addSource('full-trail-network', { type: 'geojson', data: geojson });
         
-        // Add line layer for the full network (pink, thinner)
         map.addLayer({
           id: 'full-trail-network-layer',
           type: 'line',
           source: 'full-trail-network',
-          layout: {
-            'visibility': 'none'  // Hidden by default
-          },
-          paint: {
-            'line-color': '#ff69b4',
-            'line-width': 2,
-            'line-opacity': 0.8
-          }
-        }, 'portage-landings-layer');  // Insert below portage landings
+          layout: { 'visibility': 'none' },
+          paint: { 'line-color': '#ff69b4', 'line-width': 2, 'line-opacity': 0.8 }
+        }, 'portage-landings-layer');
         
-        log(`Loaded ${geojson.features.length} edited trails for network overlay`, 'info');
-        
-        // Set up toggle
         document.getElementById('chk-full-network').addEventListener('change', (e) => {
-          map.setLayoutProperty('full-trail-network-layer', 'visibility', 
-            e.target.checked ? 'visible' : 'none');
+          map.setLayoutProperty('full-trail-network-layer', 'visibility', e.target.checked ? 'visible' : 'none');
         });
         
       } catch (err) {
@@ -694,62 +655,48 @@
       }
     }
     
-    // Handle draw updates (when user drags a vertex)
+    // Handle draw updates
     async function handleDrawUpdate(e) {
       if (!currentTrail || !isEditing) return;
       
       const feature = e.features[0];
       if (feature && feature.geometry) {
-        // Save the edited geometry
         try {
           const res = await fetch('/api/draw/update-geometry', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              trailId: currentTrail.id,
-              geometry: feature.geometry
-            })
+            body: JSON.stringify({ trailId: currentTrail.id, geometry: feature.geometry })
           });
           const data = await res.json();
-          if (data.success) {
-            log('Trail geometry updated', 'success');
-          }
+          if (data.success) log('Geometry updated', 'success');
         } catch (err) {
-          log('Failed to save edit: ' + err.message, 'error');
+          log('Save failed: ' + err.message, 'error');
         }
       }
     }
-    
-    function handleDrawSelection(e) {
-      // Could add selection handling here
-    }
-    
-    // Start app
-    initApp();
     
     // DOM elements
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
     const trailName = document.getElementById('trail-name');
     const trailStats = document.getElementById('trail-stats');
-    // Recommendation section removed
+    const trailInfoPanel = document.getElementById('trail-info-panel');
     const logEl = document.getElementById('log');
     const loading = document.getElementById('loading');
-    
-    const btnSnap = document.getElementById('btn-snap');
-    const btnPortage = document.getElementById('btn-portage');
-    const btnSnapTrail = document.getElementById('btn-snap-trail');
-    const btnMarkPortage = document.getElementById('btn-mark-portage');
-    const btnClearPortages = document.getElementById('btn-clear-portages');
-    const btnEdit = document.getElementById('btn-edit');
-    const btnSimplify = document.getElementById('btn-simplify');
-    const btnCreate = document.getElementById('btn-create');
-    const btnUndo = document.getElementById('btn-undo');
     const trailSelect = document.getElementById('trail-select');
     const statusToggle = document.getElementById('status-toggle');
     const chkComplete = document.getElementById('chk-complete');
     
-    // Modal elements
+    const btnSnap = document.getElementById('btn-snap');
+    const btnPortage = document.getElementById('btn-portage');
+    const btnSnapTrail = document.getElementById('btn-snap-trail');
+    const btnEdit = document.getElementById('btn-edit');
+    const btnSimplify = document.getElementById('btn-simplify');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnMarkPortage = document.getElementById('btn-mark-portage');
+    const btnClearPortages = document.getElementById('btn-clear-portages');
+    const btnCreate = document.getElementById('btn-create');
+    
     const createModal = document.getElementById('create-modal');
     const newTrailName = document.getElementById('new-trail-name');
     const newTrailId = document.getElementById('new-trail-id');
@@ -757,57 +704,206 @@
     const modalStartDraw = document.getElementById('modal-start-draw');
     
     // Event listeners
-    trailSelect.onchange = () => {
-      if (trailSelect.value) loadTrail(trailSelect.value);
-    };
+    trailSelect.onchange = () => { if (trailSelect.value) loadTrail(trailSelect.value); };
     btnSnap.onclick = () => snapCurrentTrail();
     btnPortage.onclick = () => snapToPortage();
     btnSnapTrail.onclick = () => startSnapToTrailMode();
-    btnMarkPortage.onclick = () => startMarkPortageMode();
-    btnClearPortages.onclick = () => clearPortages();
     btnEdit.onclick = () => toggleEditMode();
     btnSimplify.onclick = () => simplifyTrail();
-    btnCreate.onclick = () => showCreateModal();
     btnUndo.onclick = () => undoLast();
+    btnMarkPortage.onclick = () => startMarkPortageMode();
+    btnClearPortages.onclick = () => clearPortages();
+    btnCreate.onclick = () => showCreateModal();
     chkComplete.onchange = () => toggleComplete();
-    
-    // Modal handlers
     modalCancel.onclick = () => hideCreateModal();
     modalStartDraw.onclick = () => startDrawingNewTrail();
     
-    // Toggle edit mode
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `<div>${message}</div><div class="log-time">${new Date().toLocaleTimeString()}</div>`;
+      logEl.insertBefore(entry, logEl.firstChild);
+      if (logEl.children.length > 50) logEl.removeChild(logEl.lastChild);
+    }
+    
+    function showLoading(show) { loading.className = show ? 'loading show' : 'loading'; }
+    
+    async function loadSession() {
+      const res = await fetch('/api/session');
+      session = await res.json();
+      updateProgress();
+      await populateTrailDropdown();
+    }
+    
+    async function populateTrailDropdown() {
+      const res = await fetch('/api/session/trails');
+      const data = await res.json();
+      
+      trailSelect.innerHTML = '<option value="">Select a trail...</option>';
+      
+      if (data.trails) {
+        data.trails.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          const status = t.status === 'completed' ? '✓' : t.status === 'in_progress' ? '◐' : '○';
+          opt.textContent = `${status} ${t.name} (${(t.lengthM / 1000).toFixed(1)}km)`;
+          trailSelect.appendChild(opt);
+        });
+      }
+    }
+    
+    function updateProgress() {
+      if (!session) return;
+      const { progress } = session;
+      const pct = Math.round((progress.completed / progress.total) * 100);
+      progressFill.style.width = pct + '%';
+      progressText.textContent = `${progress.completed}/${progress.total} completed`;
+    }
+    
+    async function loadTrail(trailId) {
+      const res = await fetch(`/api/view/trail/${trailId}`);
+      const data = await res.json();
+      
+      if (!data.success || !data.trail) {
+        log(`Error: ${data.error?.message || 'Unknown'}`, 'error');
+        return;
+      }
+      
+      currentTrail = data.trail;
+      
+      trailName.textContent = data.trail.name;
+      trailStats.textContent = `${Math.round(data.trail.lengthM)}m • ${data.nearbyNHD.length} NHD nearby`;
+      trailInfoPanel.classList.remove('empty');
+      
+      // Enable buttons
+      btnSnap.disabled = data.nearbyNHD.length === 0;
+      btnPortage.disabled = false;
+      btnSnapTrail.disabled = false;
+      btnEdit.disabled = false;
+      btnSimplify.disabled = false;
+      btnUndo.disabled = false;
+      btnMarkPortage.disabled = false;
+      btnClearPortages.disabled = !(data.analysis.portageSegments?.length > 0);
+      
+      // Status toggle
+      const isComplete = data.trail.status === 'completed';
+      chkComplete.checked = isComplete;
+      statusToggle.classList.toggle('completed', isComplete);
+      
+      // Reset edit mode
+      if (isEditing) {
+        isEditing = false;
+        btnEdit.classList.remove('active');
+        btnEdit.querySelector('.icon').textContent = '✏️';
+        draw.deleteAll();
+      }
+      
+      updateMapLayers(data);
+      
+      if (data.bounds) {
+        map.fitBounds([
+          [data.bounds[0], data.bounds[1]],
+          [data.bounds[2], data.bounds[3]]
+        ], { padding: 50 });
+      }
+    }
+    
+    function updateMapLayers(data) {
+      ['nhd', 'original', 'edited', 'portage-segments'].forEach(id => {
+        if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
+        if (map.getSource(id)) map.removeSource(id);
+      });
+      
+      // NHD
+      if (data.nearbyNHD?.length > 0) {
+        map.addSource('nhd', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: data.nearbyNHD.map(n => ({ type: 'Feature', geometry: n.geometry, properties: {} }))
+          }
+        });
+        map.addLayer({
+          id: 'nhd-layer',
+          type: 'line',
+          source: 'nhd',
+          paint: { 'line-color': '#0066ff', 'line-width': 3 }
+        });
+      }
+      
+      // Original trail
+      if (data.analysis?.originalGeometry) {
+        map.addSource('original', {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: data.analysis.originalGeometry, properties: {} }
+        });
+        map.addLayer({
+          id: 'original-layer',
+          type: 'line',
+          source: 'original',
+          paint: { 'line-color': '#ff3333', 'line-width': 3, 'line-dasharray': [2, 2] }
+        });
+      }
+      
+      // Edited trail
+      if (data.analysis?.editedGeometry) {
+        map.addSource('edited', {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: data.analysis.editedGeometry, properties: {} }
+        });
+        map.addLayer({
+          id: 'edited-layer',
+          type: 'line',
+          source: 'edited',
+          paint: { 'line-color': '#00cc44', 'line-width': 4 }
+        });
+      }
+      
+      // Portage segments
+      if (data.analysis?.portageSegments?.length > 0) {
+        map.addSource('portage-segments', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: data.analysis.portageSegments.map(p => ({
+              type: 'Feature',
+              geometry: p.geometry,
+              properties: { name: p.name || 'Portage', distanceM: p.distanceM }
+            }))
+          }
+        });
+        map.addLayer({
+          id: 'portage-segments-layer',
+          type: 'line',
+          source: 'portage-segments',
+          paint: { 'line-color': '#ff9800', 'line-width': 6 }
+        });
+      }
+    }
+    
+    // Edit mode
     function toggleEditMode() {
       if (!currentTrail) return;
       
       isEditing = !isEditing;
       
       if (isEditing) {
-        btnEdit.textContent = '✅ Done Editing';
         btnEdit.classList.add('active');
-        log('Edit mode ON - drag vertices to adjust trail', 'info');
-        
-        // Add current trail to draw for editing
-        const geom = draw.getAll();
-        if (geom.features.length === 0) {
-          // Load the current trail geometry into draw
-          loadTrailIntoDraw();
-        }
+        btnEdit.querySelector('.icon').textContent = '✅';
+        log('Edit mode ON - drag vertices', 'info');
+        loadTrailIntoDraw();
       } else {
-        btnEdit.textContent = '✏️ Edit Trail';
         btnEdit.classList.remove('active');
+        btnEdit.querySelector('.icon').textContent = '✏️';
         log('Edit mode OFF', 'info');
-        
-        // Clear draw and reload trail layers
         draw.deleteAll();
         loadTrail(currentTrail.id);
       }
     }
     
-    // Load trail geometry into draw plugin for editing
     function loadTrailIntoDraw() {
       if (!currentTrail) return;
       
-      // Get current geometry from analysis
       fetch(`/api/analyze/trail/${currentTrail.id}`)
         .then(res => res.json())
         .then(data => {
@@ -821,7 +917,6 @@
             draw.add(feature);
             draw.changeMode('direct_select', { featureId: currentTrail.id });
             
-            // Hide the regular trail layers while editing (including portage segments)
             ['original-layer', 'edited-layer', 'portage-segments-layer'].forEach(id => {
               if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
             });
@@ -829,7 +924,320 @@
         });
     }
     
-    // Create new trail functions
+    // Snap to NHD
+    async function snapCurrentTrail() {
+      if (!currentTrail) return;
+      
+      showLoading(true);
+      try {
+        const analysisRes = await fetch(`/api/analyze/trail/${currentTrail.id}`);
+        const analysis = await analysisRes.json();
+        
+        await fetch('/api/draw/snap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trailId: currentTrail.id, nhdIds: analysis.suggestedNHDIds })
+        });
+        
+        log(`Snapped to ${analysis.suggestedNHDIds.length} NHD segments`, 'success');
+        await loadTrail(currentTrail.id);
+      } catch (err) {
+        log('Snap failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Snap to portage
+    async function snapToPortage() {
+      if (!currentTrail) return;
+      
+      showLoading(true);
+      try {
+        const pathFeatures = map.queryRenderedFeatures({
+          layers: map.getStyle().layers.filter(l => l.id.includes('road') || l.id.includes('path')).map(l => l.id)
+        });
+        
+        const paths = pathFeatures.filter(f => {
+          const cls = f.properties.class || f.properties.type || '';
+          return ['path', 'track', 'footway', 'pedestrian', 'trail'].includes(cls);
+        });
+        
+        if (paths.length === 0) {
+          log('No paths found. Try zooming in.', 'warning');
+          showLoading(false);
+          return;
+        }
+        
+        const res = await fetch('/api/draw/snap-portage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trailId: currentTrail.id,
+            pathGeometries: paths.map(f => f.geometry),
+            tolerance: 50
+          })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Snapped ${data.pointsSnapped} points to portage`, 'success');
+          await loadTrail(currentTrail.id);
+        }
+      } catch (err) {
+        log('Snap failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Snap to trail
+    let snapTrailMode = false;
+    let snapTrailClicks = [];
+    let snapTrailMarkers = [];
+    
+    function startSnapToTrailMode() {
+      if (!currentTrail) return;
+      
+      if (snapTrailMode) {
+        cancelSnapToTrailMode();
+        return;
+      }
+      
+      if (!document.getElementById('chk-full-network').checked) {
+        document.getElementById('chk-full-network').checked = true;
+        map.setLayoutProperty('full-trail-network-layer', 'visibility', 'visible');
+      }
+      
+      snapTrailMode = true;
+      snapTrailClicks = [];
+      btnSnapTrail.classList.add('active');
+      
+      log('Click on CURRENT trail (point to snap)', 'info');
+      
+      map.on('click', handleSnapTrailClick);
+      map.getCanvas().style.cursor = 'crosshair';
+    }
+    
+    function cancelSnapToTrailMode() {
+      snapTrailMode = false;
+      snapTrailClicks = [];
+      btnSnapTrail.classList.remove('active');
+      map.off('click', handleSnapTrailClick);
+      map.getCanvas().style.cursor = '';
+      snapTrailMarkers.forEach(m => m.remove());
+      snapTrailMarkers = [];
+    }
+    
+    async function handleSnapTrailClick(e) {
+      if (!snapTrailMode) return;
+      
+      snapTrailClicks.push([e.lngLat.lng, e.lngLat.lat]);
+      
+      const marker = new mapboxgl.Marker({ color: snapTrailClicks.length === 1 ? '#ff69b4' : '#00ff00' })
+        .setLngLat(e.lngLat)
+        .addTo(map);
+      snapTrailMarkers.push(marker);
+      
+      if (snapTrailClicks.length === 1) {
+        log('Click on TARGET trail to snap to', 'info');
+      } else if (snapTrailClicks.length === 2) {
+        await performSnapToTrail(snapTrailClicks[0], snapTrailClicks[1]);
+        cancelSnapToTrailMode();
+      }
+    }
+    
+    async function performSnapToTrail(fromPoint, toPoint) {
+      showLoading(true);
+      try {
+        const res = await fetch('/api/draw/snap-to-trail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trailId: currentTrail.id, fromPoint, toPoint })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Snapped to trail (moved ${data.distanceMoved?.toFixed(1) || '?'}m)`, 'success');
+          await loadTrail(currentTrail.id);
+        } else {
+          log('Snap failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        log('Snap failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Mark portage mode
+    let markPortageMode = false;
+    let portageClicks = [];
+    let portageMarkers = [];
+    
+    function startMarkPortageMode() {
+      if (!currentTrail) return;
+      
+      if (markPortageMode) {
+        cancelMarkPortageMode();
+        return;
+      }
+      
+      markPortageMode = true;
+      portageClicks = [];
+      btnMarkPortage.classList.add('active');
+      
+      log('Click START of portage section', 'info');
+      
+      map.on('click', handlePortageClick);
+      map.getCanvas().style.cursor = 'crosshair';
+    }
+    
+    function cancelMarkPortageMode() {
+      markPortageMode = false;
+      portageClicks = [];
+      btnMarkPortage.classList.remove('active');
+      map.off('click', handlePortageClick);
+      map.getCanvas().style.cursor = '';
+      portageMarkers.forEach(m => m.remove());
+      portageMarkers = [];
+    }
+    
+    async function handlePortageClick(e) {
+      if (!markPortageMode) return;
+      
+      portageClicks.push([e.lngLat.lng, e.lngLat.lat]);
+      
+      const marker = new mapboxgl.Marker({ color: portageClicks.length === 1 ? '#4caf50' : '#f44336' })
+        .setLngLat(e.lngLat)
+        .addTo(map);
+      portageMarkers.push(marker);
+      
+      if (portageClicks.length === 1) {
+        log('Click END of portage section', 'info');
+      } else if (portageClicks.length === 2) {
+        await findAndMarkPortage(portageClicks[0], portageClicks[1]);
+        cancelMarkPortageMode();
+      }
+    }
+    
+    async function findAndMarkPortage(startPoint, endPoint) {
+      showLoading(true);
+      try {
+        const res = await fetch('/api/draw/mark-portage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trailId: currentTrail.id, startPoint, endPoint })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(data.portage ? `Marked: ${data.portage.name}` : 'Portage marked', 'success');
+          await loadTrail(currentTrail.id);
+        }
+      } catch (err) {
+        log('Mark failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    async function clearPortages() {
+      if (!currentTrail || !confirm('Clear all portages?')) return;
+      
+      showLoading(true);
+      try {
+        const res = await fetch('/api/draw/clear-portages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trailId: currentTrail.id })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Cleared ${data.clearedCount} portage(s)`, 'success');
+          await loadTrail(currentTrail.id);
+        }
+      } catch (err) {
+        log('Clear failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Simplify
+    async function simplifyTrail() {
+      if (!currentTrail) return;
+      
+      const tolerance = prompt('Simplification tolerance (meters):', '50');
+      if (!tolerance) return;
+      
+      showLoading(true);
+      try {
+        const res = await fetch('/api/draw/simplify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trailId: currentTrail.id, tolerance: parseFloat(tolerance) })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Simplified: ${data.originalPoints} → ${data.newPoints} pts`, 'success');
+          await loadTrail(currentTrail.id);
+        }
+      } catch (err) {
+        log('Simplify failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Undo
+    async function undoLast() {
+      if (!currentTrail) return;
+      
+      const res = await fetch('/api/draw/undo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trailId: currentTrail.id })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        log('Undone', 'info');
+        await loadTrail(currentTrail.id);
+      }
+    }
+    
+    // Complete toggle
+    async function toggleComplete() {
+      if (!currentTrail) return;
+      
+      const newStatus = chkComplete.checked ? 'completed' : 'pending';
+      
+      try {
+        const res = await fetch('/api/session/trail/' + currentTrail.id + '/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Marked ${newStatus}`, 'success');
+          statusToggle.classList.toggle('completed', chkComplete.checked);
+          await populateTrailDropdown();
+          trailSelect.value = currentTrail.id;
+        } else {
+          chkComplete.checked = !chkComplete.checked;
+        }
+      } catch (err) {
+        chkComplete.checked = !chkComplete.checked;
+        log('Status update failed', 'error');
+      }
+    }
+    
+    // Create new trail
     let isDrawingNew = false;
     let pendingTrailName = '';
     let pendingTrailId = '';
@@ -850,30 +1258,27 @@
       pendingTrailId = newTrailId.value.trim();
       
       if (!pendingTrailName) {
-        alert('Please enter a trail name');
+        alert('Enter a trail name');
         return;
       }
       
       hideCreateModal();
       isDrawingNew = true;
       
-      // Update button to show we're in drawing mode
-      btnCreate.textContent = '✅ Finish Drawing';
-      btnCreate.classList.add('drawing');
+      btnCreate.classList.add('active');
+      btnCreate.querySelector('.icon').textContent = '✅';
       btnCreate.onclick = finishDrawingNewTrail;
       
-      // Clear any existing drawings and enter line draw mode
       draw.deleteAll();
       draw.changeMode('draw_line_string');
       
-      log(`Drawing new trail: "${pendingTrailName}" - Click to add points, double-click to finish`, 'info');
+      log(`Drawing: "${pendingTrailName}" - double-click to finish`, 'info');
     }
     
     async function finishDrawingNewTrail() {
       const features = draw.getAll();
       
       if (features.features.length === 0) {
-        log('No geometry drawn - cancelling', 'warning');
         cancelDrawingNewTrail();
         return;
       }
@@ -881,7 +1286,7 @@
       const geometry = features.features[0].geometry;
       
       if (geometry.coordinates.length < 2) {
-        log('Need at least 2 points - keep drawing', 'warning');
+        log('Need at least 2 points', 'warning');
         return;
       }
       
@@ -890,27 +1295,16 @@
         const res = await fetch('/api/draw/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trailId: pendingTrailId || null,
-            trailName: pendingTrailName,
-            geometry: geometry
-          })
+          body: JSON.stringify({ trailId: pendingTrailId || null, trailName: pendingTrailName, geometry })
         });
         
         const data = await res.json();
-        
         if (data.success) {
-          log(`Created trail: ${data.trail.id} - ${data.trail.name}`, 'success');
-          
-          // Reset state
+          log(`Created: ${data.trail.name}`, 'success');
           cancelDrawingNewTrail();
-          
-          // Refresh trail list and load new trail
           await populateTrailDropdown();
           await loadTrail(data.trail.id);
           trailSelect.value = data.trail.id;
-        } else {
-          log('Create failed: ' + data.error?.message, 'error');
         }
       } catch (err) {
         log('Create failed: ' + err.message, 'error');
@@ -923,643 +1317,11 @@
       isDrawingNew = false;
       pendingTrailName = '';
       pendingTrailId = '';
-      btnCreate.textContent = '➕ Create New';
-      btnCreate.classList.remove('drawing');
+      btnCreate.classList.remove('active');
+      btnCreate.querySelector('.icon').textContent = '➕';
       btnCreate.onclick = showCreateModal;
       draw.deleteAll();
       draw.changeMode('simple_select');
-    }
-    
-    // Functions
-    function log(message, type = 'info') {
-      const entry = document.createElement('div');
-      entry.className = `log-entry ${type}`;
-      entry.innerHTML = `
-        <div>${message}</div>
-        <div class="log-time">${new Date().toLocaleTimeString()}</div>
-      `;
-      logEl.insertBefore(entry, logEl.firstChild);
-    }
-    
-    function showLoading(show) {
-      loading.className = show ? 'loading show' : 'loading';
-    }
-    
-    async function loadSession() {
-      const res = await fetch('/api/session');
-      session = await res.json();
-      updateProgress();
-      await populateTrailDropdown();
-    }
-    
-    async function populateTrailDropdown() {
-      const res = await fetch('/api/session/trails');
-      const data = await res.json();
-      
-      trailSelect.innerHTML = '<option value="">-- Choose a trail --</option>';
-      
-      if (data.trails) {
-        data.trails.forEach(t => {
-          const opt = document.createElement('option');
-          opt.value = t.id;
-          opt.textContent = `${t.id} - ${t.name} (${Math.round(t.lengthM / 1000)}km) [${t.status}]`;
-          trailSelect.appendChild(opt);
-        });
-      }
-    }
-    
-    function updateProgress() {
-      if (!session) return;
-      const { progress } = session;
-      const pct = Math.round((progress.completed / progress.total) * 100);
-      progressFill.style.width = pct + '%';
-      progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.skipped} skipped)`;
-    }
-    
-    async function loadNextTrail() {
-      showLoading(true);
-      try {
-        const res = await fetch('/api/session/queue/next');
-        const data = await res.json();
-        
-        if (!data.trail) {
-          log('All trails completed!', 'success');
-          return;
-        }
-        
-        await loadTrail(data.trail.id);
-        log(`Loaded: ${data.trail.name} (${data.suggestedApproach})`, 'info');
-        
-      } catch (err) {
-        log('Error loading trail: ' + err.message, 'warning');
-      } finally {
-        showLoading(false);
-      }
-    }
-    
-    async function loadTrail(trailId) {
-      const res = await fetch(`/api/view/trail/${trailId}`);
-      const data = await res.json();
-      
-      if (!data.success || !data.trail) {
-        log(`Error loading trail: ${data.error?.message || 'Unknown error'}`, 'error');
-        return;
-      }
-      
-      currentTrail = data.trail;
-      
-      trailName.textContent = data.trail.name;
-      trailStats.textContent = `${Math.round(data.trail.lengthM)}m • ${data.nearbyNHD.length} nearby NHD`;
-      
-      // Recommendation section removed
-      
-      btnSnap.disabled = data.nearbyNHD.length === 0;
-      btnPortage.disabled = false;
-      btnSnapTrail.disabled = false;
-      btnMarkPortage.disabled = false;
-      btnClearPortages.disabled = !(data.analysis.portageSegments && data.analysis.portageSegments.length > 0);
-      btnEdit.disabled = false;
-      btnSimplify.disabled = false;
-      btnUndo.disabled = false;
-      
-      // Show status toggle and set state
-      statusToggle.classList.add('show');
-      const isComplete = data.trail.status === 'completed';
-      chkComplete.checked = isComplete;
-      statusToggle.classList.toggle('completed', isComplete);
-      
-      // Reset edit mode when loading new trail
-      if (isEditing) {
-        isEditing = false;
-        btnEdit.textContent = '✏️ Edit Trail';
-        btnEdit.classList.remove('active');
-        draw.deleteAll();
-      }
-      
-      // Update map
-      updateMapLayers(data);
-      
-      // Fit bounds
-      if (data.bounds) {
-        map.fitBounds([
-          [data.bounds[0], data.bounds[1]],
-          [data.bounds[2], data.bounds[3]]
-        ], { padding: 50 });
-      }
-    }
-    
-    function updateMapLayers(data) {
-      // Remove existing layers
-      ['nhd', 'original', 'edited', 'highlight', 'portage-segments'].forEach(id => {
-        if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
-        if (map.getSource(id)) map.removeSource(id);
-      });
-      
-      // Add NHD
-      if (data.nearbyNHD && data.nearbyNHD.length > 0) {
-        map.addSource('nhd', {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: data.nearbyNHD.map(n => ({
-              type: 'Feature',
-              geometry: n.geometry,
-              properties: { name: n.gnisName }
-            }))
-          }
-        });
-        map.addLayer({
-          id: 'nhd-layer',
-          type: 'line',
-          source: 'nhd',
-          paint: { 'line-color': '#0066ff', 'line-width': 3 }
-        });
-      }
-      
-      // Add original trail (red dashed)
-      if (data.analysis && data.analysis.originalGeometry) {
-        map.addSource('original', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: data.analysis.originalGeometry,
-            properties: {}
-          }
-        });
-        map.addLayer({
-          id: 'original-layer',
-          type: 'line',
-          source: 'original',
-          paint: { 
-            'line-color': '#ff3333', 
-            'line-width': 3,
-            'line-dasharray': [2, 2]
-          }
-        });
-      }
-      
-      // Add edited trail (green) if exists
-      if (data.analysis && data.analysis.editedGeometry) {
-        map.addSource('edited', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: data.analysis.editedGeometry,
-            properties: {}
-          }
-        });
-        map.addLayer({
-          id: 'edited-layer',
-          type: 'line',
-          source: 'edited',
-          paint: { 
-            'line-color': '#00cc44', 
-            'line-width': 4
-          }
-        });
-      }
-      
-      // Add portage segments (brown/orange, thicker) if any exist
-      if (data.analysis && data.analysis.portageSegments && data.analysis.portageSegments.length > 0) {
-        map.addSource('portage-segments', {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: data.analysis.portageSegments.map(p => ({
-              type: 'Feature',
-              geometry: p.geometry,
-              properties: {
-                name: p.name || 'Unmarked Portage',
-                distanceM: p.distanceM,
-                distanceRods: p.distanceRods,
-                difficulty: p.difficulty || 'unknown'
-              }
-            }))
-          }
-        });
-        
-        map.addLayer({
-          id: 'portage-segments-layer',
-          type: 'line',
-          source: 'portage-segments',
-          paint: { 
-            'line-color': '#ff9800', 
-            'line-width': 6
-          }
-        });
-        
-        // Add click handler for portage segments
-        map.on('click', 'portage-segments-layer', (e) => {
-          const props = e.features[0].properties;
-          new mapboxgl.Popup()
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <strong>${props.name}</strong><br>
-              ${props.distanceM ? `${props.distanceM}m (${props.distanceRods} rods)<br>` : ''}
-              Difficulty: ${props.difficulty}
-            `)
-            .addTo(map);
-        });
-        
-        map.on('mouseenter', 'portage-segments-layer', () => {
-          map.getCanvas().style.cursor = 'pointer';
-        });
-        map.on('mouseleave', 'portage-segments-layer', () => {
-          map.getCanvas().style.cursor = '';
-        });
-        
-        log(`Trail has ${data.analysis.portageSegments.length} marked portage(s)`, 'info');
-      }
-    }
-    
-    async function snapCurrentTrail() {
-      if (!currentTrail) return;
-      
-      showLoading(true);
-      try {
-        const analysisRes = await fetch(`/api/analyze/trail/${currentTrail.id}`);
-        const analysis = await analysisRes.json();
-        
-        const res = await fetch('/api/draw/snap', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trailId: currentTrail.id,
-            nhdIds: analysis.suggestedNHDIds
-          })
-        });
-        
-        const data = await res.json();
-        log(`Snapped to ${analysis.suggestedNHDIds.length} NHD segments`, 'success');
-        
-        await loadTrail(currentTrail.id);
-        
-      } catch (err) {
-        log('Snap failed: ' + err.message, 'warning');
-      } finally {
-        showLoading(false);
-      }
-    }
-    
-    async function simplifyTrail() {
-      if (!currentTrail) return;
-      
-      const tolerance = prompt('Simplification tolerance in meters (higher = fewer points):', '50');
-      if (!tolerance) return;
-      
-      showLoading(true);
-      try {
-        const res = await fetch('/api/draw/simplify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trailId: currentTrail.id,
-            tolerance: parseFloat(tolerance)
-          })
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-          log(`Simplified: ${data.originalPoints} → ${data.newPoints} points`, 'success');
-          await loadTrail(currentTrail.id);
-        } else {
-          log('Simplify failed: ' + data.error?.message, 'error');
-        }
-      } catch (err) {
-        log('Simplify failed: ' + err.message, 'warning');
-      } finally {
-        showLoading(false);
-      }
-    }
-    
-    async function snapToPortage() {
-      if (!currentTrail) return;
-      
-      showLoading(true);
-      log('Searching for portage trails in view...', 'info');
-      
-      try {
-        // Query Mapbox for path features in the current view
-        // Look for roads with class 'path', 'track', or 'footway'
-        const pathFeatures = map.queryRenderedFeatures({
-          layers: ['road-path', 'road-pedestrian', 'road-footway', 'road-steps']
-        });
-        
-        // Also try querying by source layer for the streets tileset
-        const allRoadFeatures = map.queryRenderedFeatures({
-          layers: map.getStyle().layers
-            .filter(l => l.id.includes('road') || l.id.includes('path'))
-            .map(l => l.id)
-        });
-        
-        // Filter for path-like features
-        const paths = allRoadFeatures.filter(f => {
-          const cls = f.properties.class || f.properties.type || '';
-          return ['path', 'track', 'footway', 'pedestrian', 'trail'].includes(cls);
-        });
-        
-        if (paths.length === 0) {
-          log('No portage/path features found in current view. Try zooming in.', 'warning');
-          showLoading(false);
-          return;
-        }
-        
-        // Extract geometries
-        const pathGeometries = paths.map(f => f.geometry);
-        
-        log(`Found ${paths.length} path segments. Snapping...`, 'info');
-        
-        const res = await fetch('/api/draw/snap-portage', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trailId: currentTrail.id,
-            pathGeometries: pathGeometries,
-            tolerance: 50
-          })
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-          log(`Snapped to portage: ${data.pointsSnapped}/${data.totalPoints} points`, 'success');
-          await loadTrail(currentTrail.id);
-        } else {
-          log('Snap portage failed: ' + data.error?.message, 'error');
-        }
-      } catch (err) {
-        log('Snap portage failed: ' + err.message, 'warning');
-      } finally {
-        showLoading(false);
-      }
-    }
-    
-    // Mark Portage Mode
-    let markPortageMode = false;
-    let portageClicks = [];
-    let portageMarkers = [];
-    
-    function startMarkPortageMode() {
-      if (!currentTrail) return;
-      
-      if (markPortageMode) {
-        cancelMarkPortageMode();
-        return;
-      }
-      
-      markPortageMode = true;
-      portageClicks = [];
-      btnMarkPortage.textContent = '❌ Cancel';
-      btnMarkPortage.classList.add('active');
-      
-      log('Click on the trail near the START of the portage', 'info');
-      
-      // Add click handler for the map
-      map.on('click', handlePortageClick);
-      map.getCanvas().style.cursor = 'crosshair';
-    }
-    
-    function cancelMarkPortageMode() {
-      markPortageMode = false;
-      portageClicks = [];
-      btnMarkPortage.textContent = '🏕️ Mark Portage';
-      btnMarkPortage.classList.remove('active');
-      map.off('click', handlePortageClick);
-      map.getCanvas().style.cursor = '';
-      
-      // Remove any temp markers
-      portageMarkers.forEach(m => m.remove());
-      portageMarkers = [];
-    }
-    
-    async function handlePortageClick(e) {
-      if (!markPortageMode) return;
-      
-      const lngLat = e.lngLat;
-      portageClicks.push([lngLat.lng, lngLat.lat]);
-      
-      // Add a marker at the click point
-      const marker = new mapboxgl.Marker({ color: portageClicks.length === 1 ? '#4caf50' : '#f44336' })
-        .setLngLat(lngLat)
-        .addTo(map);
-      portageMarkers.push(marker);
-      
-      if (portageClicks.length === 1) {
-        log('Now click near the END of the portage', 'info');
-      } else if (portageClicks.length === 2) {
-        // We have both points - find and mark the portage
-        await findAndMarkPortage(portageClicks[0], portageClicks[1]);
-        cancelMarkPortageMode();
-      }
-    }
-    
-    async function findAndMarkPortage(startPoint, endPoint) {
-      showLoading(true);
-      
-      try {
-        const res = await fetch('/api/draw/mark-portage', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trailId: currentTrail.id,
-            startPoint: startPoint,
-            endPoint: endPoint
-          })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          if (data.portage) {
-            log(`Marked portage: ${data.portage.name} (${data.portage.distanceM}m, ${data.portage.difficulty})`, 'success');
-          } else {
-            log('Portage section marked (no nearby landing found for auto-fill)', 'warning');
-          }
-          await loadTrail(currentTrail.id);
-        } else {
-          log('Mark portage failed: ' + data.error?.message, 'error');
-        }
-      } catch (err) {
-        log('Mark portage failed: ' + err.message, 'error');
-      } finally {
-        showLoading(false);
-      }
-    }
-    
-    async function clearPortages() {
-      if (!currentTrail) return;
-      
-      if (!confirm('Clear all portages from this trail?')) return;
-      
-      showLoading(true);
-      try {
-        const res = await fetch('/api/draw/clear-portages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trailId: currentTrail.id })
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-          log(`Cleared ${data.clearedCount} portage(s)`, 'success');
-          await loadTrail(currentTrail.id);
-        } else {
-          log('Clear portages failed: ' + data.error?.message, 'error');
-        }
-      } catch (err) {
-        log('Clear portages failed: ' + err.message, 'error');
-      } finally {
-        showLoading(false);
-      }
-    }
-    
-    // Snap to Trail Mode
-    let snapTrailMode = false;
-    let snapTrailClicks = [];
-    let snapTrailMarkers = [];
-    
-    function startSnapToTrailMode() {
-      if (!currentTrail) return;
-      
-      if (snapTrailMode) {
-        cancelSnapToTrailMode();
-        return;
-      }
-      
-      // Make sure full network is visible
-      if (!document.getElementById('chk-full-network').checked) {
-        document.getElementById('chk-full-network').checked = true;
-        map.setLayoutProperty('full-trail-network-layer', 'visibility', 'visible');
-        log('Enabled Full Trail Network layer for snapping', 'info');
-      }
-      
-      snapTrailMode = true;
-      snapTrailClicks = [];
-      btnSnapTrail.textContent = '❌ Cancel';
-      btnSnapTrail.classList.add('active');
-      
-      log('Click on your CURRENT trail near the point to snap FROM', 'info');
-      
-      map.on('click', handleSnapTrailClick);
-      map.getCanvas().style.cursor = 'crosshair';
-    }
-    
-    function cancelSnapToTrailMode() {
-      snapTrailMode = false;
-      snapTrailClicks = [];
-      btnSnapTrail.textContent = '🔗 Trail';
-      btnSnapTrail.classList.remove('active');
-      map.off('click', handleSnapTrailClick);
-      map.getCanvas().style.cursor = '';
-      
-      snapTrailMarkers.forEach(m => m.remove());
-      snapTrailMarkers = [];
-    }
-    
-    async function handleSnapTrailClick(e) {
-      if (!snapTrailMode) return;
-      
-      const lngLat = e.lngLat;
-      snapTrailClicks.push([lngLat.lng, lngLat.lat]);
-      
-      const marker = new mapboxgl.Marker({ color: snapTrailClicks.length === 1 ? '#ff69b4' : '#00ff00' })
-        .setLngLat(lngLat)
-        .addTo(map);
-      snapTrailMarkers.push(marker);
-      
-      if (snapTrailClicks.length === 1) {
-        log('Now click on the TARGET trail to snap TO', 'info');
-      } else if (snapTrailClicks.length === 2) {
-        await performSnapToTrail(snapTrailClicks[0], snapTrailClicks[1]);
-        cancelSnapToTrailMode();
-      }
-    }
-    
-    async function performSnapToTrail(fromPoint, toPoint) {
-      showLoading(true);
-      
-      try {
-        const res = await fetch('/api/draw/snap-to-trail', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trailId: currentTrail.id,
-            fromPoint: fromPoint,
-            toPoint: toPoint
-          })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          log(`Snapped trail endpoint to target trail (moved ${data.distanceMoved?.toFixed(1) || '?'}m)`, 'success');
-          await loadTrail(currentTrail.id);
-        } else {
-          log('Snap to trail failed: ' + data.error?.message, 'error');
-        }
-      } catch (err) {
-        log('Snap to trail failed: ' + err.message, 'error');
-      } finally {
-        showLoading(false);
-      }
-    }
-    
-    async function toggleComplete() {
-      if (!currentTrail) return;
-      
-      const newStatus = chkComplete.checked ? 'completed' : 'pending';
-      
-      try {
-        const res = await fetch('/api/session/trail/' + currentTrail.id + '/status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-          log(`Trail marked as ${newStatus}`, 'success');
-          statusToggle.classList.toggle('completed', chkComplete.checked);
-          // Update dropdown text
-          await populateTrailDropdown();
-          trailSelect.value = currentTrail.id;
-        } else {
-          chkComplete.checked = !chkComplete.checked; // revert
-          log('Status update failed: ' + data.error?.message, 'error');
-        }
-      } catch (err) {
-        chkComplete.checked = !chkComplete.checked; // revert
-        log('Status update failed: ' + err.message, 'error');
-      }
-    }
-    
-    async function undoLast() {
-      if (!currentTrail) return;
-      
-      const res = await fetch('/api/draw/undo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trailId: currentTrail.id })
-      });
-      
-      const data = await res.json();
-      if (data.success) {
-        log('Undid last operation', 'info');
-        await loadTrail(currentTrail.id);
-      }
-    }
-    
-    async function skipTrail() {
-      if (!currentTrail) return;
-      
-      await fetch(`/api/session/trail/${currentTrail.id}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'skipped' })
-      });
-      
-      log(`Skipped: ${currentTrail.name}`, 'warning');
-      await loadSession();
-      await loadNextTrail();
     }
   </script>
 </body>
