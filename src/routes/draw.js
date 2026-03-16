@@ -944,11 +944,11 @@ router.post('/update-geometry', async (req, res, next) => {
 
 /**
  * POST /api/draw/snap-to-trail
- * Snap current trail endpoint to another trail
+ * Snap all nearby vertices of current trail to target trail
  */
 router.post('/snap-to-trail', async (req, res, next) => {
   try {
-    const { trailId, fromPoint, toPoint } = req.body;
+    const { trailId, fromPoint, toPoint, tolerance = 100 } = req.body;
     
     if (!trailId || !fromPoint || !toPoint) {
       return res.status(400).json({
@@ -974,32 +974,11 @@ router.post('/snap-to-trail', async (req, res, next) => {
     const currentGeometry = currentResult.rows[0].geometry;
     const coords = currentGeometry.coordinates;
     
-    // Find closest vertex on current trail to fromPoint
-    let closestIdx = 0;
-    let closestDist = Infinity;
-    
-    for (let i = 0; i < coords.length; i++) {
-      const dx = coords[i][0] - fromPoint[0];
-      const dy = coords[i][1] - fromPoint[1];
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < closestDist) {
-        closestDist = dist;
-        closestIdx = i;
-      }
-    }
-    
-    // Find the closest point on any OTHER trail to toPoint
-    const snapResult = await query(`
+    // Find the target trail (closest to toPoint)
+    const targetResult = await query(`
       SELECT 
-        ST_AsGeoJSON(ST_ClosestPoint(
-          COALESCE(edited_geometry, original_geometry),
-          ST_SetSRID(ST_MakePoint($2, $3), 4326)
-        ))::json as snap_point,
-        ST_Distance(
-          COALESCE(edited_geometry, original_geometry)::geography,
-          ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography
-        ) as distance_m,
-        id as target_trail_id
+        id as target_trail_id,
+        ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry
       FROM trail_edits
       WHERE id != $1
       ORDER BY ST_Distance(
@@ -1009,27 +988,58 @@ router.post('/snap-to-trail', async (req, res, next) => {
       LIMIT 1
     `, [trailId, toPoint[0], toPoint[1]]);
     
-    if (snapResult.rows.length === 0) {
+    if (targetResult.rows.length === 0) {
       return res.status(400).json({
         success: false,
         error: { code: 'NO_TARGET', message: 'No other trails found to snap to' }
       });
     }
     
-    const snapPoint = snapResult.rows[0].snap_point;
-    const distanceM = snapResult.rows[0].distance_m;
-    const targetTrailId = snapResult.rows[0].target_trail_id;
+    const targetTrailId = targetResult.rows[0].target_trail_id;
     
-    // Calculate distance moved
-    const oldCoord = coords[closestIdx];
-    const newCoord = snapPoint.coordinates;
-    const dxMoved = (newCoord[0] - oldCoord[0]) * 111000 * Math.cos(oldCoord[1] * Math.PI / 180);
-    const dyMoved = (newCoord[1] - oldCoord[1]) * 111000;
-    const distanceMoved = Math.sqrt(dxMoved * dxMoved + dyMoved * dyMoved);
+    // For each vertex in current trail, check if it's close to target trail
+    // If so, snap it to the closest point on target trail
+    const newCoords = [];
+    let snappedCount = 0;
+    let totalDistanceMoved = 0;
     
-    // Update the coordinate at closestIdx
-    const newCoords = [...coords];
-    newCoords[closestIdx] = newCoord;
+    for (let i = 0; i < coords.length; i++) {
+      const coord = coords[i];
+      
+      // Find distance to target trail and closest point
+      const snapResult = await query(`
+        SELECT 
+          ST_AsGeoJSON(ST_ClosestPoint(
+            COALESCE(edited_geometry, original_geometry),
+            ST_SetSRID(ST_MakePoint($2, $3), 4326)
+          ))::json as snap_point,
+          ST_Distance(
+            COALESCE(edited_geometry, original_geometry)::geography,
+            ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography
+          ) as distance_m
+        FROM trail_edits
+        WHERE id = $1
+      `, [targetTrailId, coord[0], coord[1]]);
+      
+      const distanceM = snapResult.rows[0].distance_m;
+      const snapPoint = snapResult.rows[0].snap_point;
+      
+      // If within tolerance, snap this vertex
+      if (distanceM <= tolerance) {
+        newCoords.push(snapPoint.coordinates);
+        snappedCount++;
+        totalDistanceMoved += distanceM;
+      } else {
+        newCoords.push(coord);
+      }
+    }
+    
+    if (snappedCount === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_VERTICES_IN_RANGE', message: `No vertices within ${tolerance}m of target trail. Try clicking closer or increase tolerance.` }
+      });
+    }
     
     const newGeometry = {
       type: 'LineString',
@@ -1041,7 +1051,8 @@ router.post('/snap-to-trail', async (req, res, next) => {
       fromPoint, 
       toPoint, 
       targetTrailId,
-      vertexIndex: closestIdx 
+      tolerance,
+      snappedCount
     }, currentGeometry, newGeometry);
     
     // Update geometry
@@ -1055,8 +1066,9 @@ router.post('/snap-to-trail', async (req, res, next) => {
       success: true,
       trailId,
       targetTrailId,
-      vertexSnapped: closestIdx,
-      distanceMoved: distanceMoved
+      verticesSnapped: snappedCount,
+      totalVertices: coords.length,
+      avgDistanceMoved: snappedCount > 0 ? totalDistanceMoved / snappedCount : 0
     });
     
   } catch (err) {

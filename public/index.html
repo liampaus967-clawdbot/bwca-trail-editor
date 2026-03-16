@@ -1050,15 +1050,16 @@
     async function performSnapToTrail(fromPoint, toPoint) {
       showLoading(true);
       try {
+        // Default 100m tolerance - snap all vertices within 100m of target trail
         const res = await fetch('/api/draw/snap-to-trail', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trailId: currentTrail.id, fromPoint, toPoint })
+          body: JSON.stringify({ trailId: currentTrail.id, fromPoint, toPoint, tolerance: 100 })
         });
         
         const data = await res.json();
         if (data.success) {
-          log(`Snapped to trail (moved ${data.distanceMoved?.toFixed(1) || '?'}m)`, 'success');
+          log(`Snapped ${data.verticesSnapped}/${data.totalVertices} vertices to trail`, 'success');
           await loadTrail(currentTrail.id);
         } else {
           log('Snap failed: ' + data.error?.message, 'error');
