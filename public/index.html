@@ -163,6 +163,16 @@
       color: #fff;
     }
     
+    .btn-mark-portage {
+      background: #607d8b;
+      color: #fff;
+    }
+    
+    .btn-mark-portage.active {
+      background: #ff5722;
+      animation: pulse 1s infinite;
+    }
+    
     .btn-create {
       background: #2196f3;
       color: #fff;
@@ -361,6 +371,7 @@
         <div class="actions">
           <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
           <button class="btn-portage" id="btn-portage" disabled>🥾 Snap Portage</button>
+          <button class="btn-mark-portage" id="btn-mark-portage" disabled>🏕️ Mark Portage</button>
           <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
           <button class="btn-simplify" id="btn-simplify" disabled>🔧 Simplify</button>
           <button class="btn-create" id="btn-create">➕ Create New</button>
@@ -615,6 +626,7 @@
     
     const btnSnap = document.getElementById('btn-snap');
     const btnPortage = document.getElementById('btn-portage');
+    const btnMarkPortage = document.getElementById('btn-mark-portage');
     const btnEdit = document.getElementById('btn-edit');
     const btnSimplify = document.getElementById('btn-simplify');
     const btnCreate = document.getElementById('btn-create');
@@ -634,6 +646,7 @@
     };
     btnSnap.onclick = () => snapCurrentTrail();
     btnPortage.onclick = () => snapToPortage();
+    btnMarkPortage.onclick = () => startMarkPortageMode();
     btnEdit.onclick = () => toggleEditMode();
     btnSimplify.onclick = () => simplifyTrail();
     btnCreate.onclick = () => showCreateModal();
@@ -887,6 +900,7 @@
       
       btnSnap.disabled = data.nearbyNHD.length === 0;
       btnPortage.disabled = false;
+      btnMarkPortage.disabled = false;
       btnEdit.disabled = false;
       btnSimplify.disabled = false;
       btnUndo.disabled = false;
@@ -1099,6 +1113,98 @@
         }
       } catch (err) {
         log('Snap portage failed: ' + err.message, 'warning');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // Mark Portage Mode
+    let markPortageMode = false;
+    let portageClicks = [];
+    let portageMarkers = [];
+    
+    function startMarkPortageMode() {
+      if (!currentTrail) return;
+      
+      if (markPortageMode) {
+        cancelMarkPortageMode();
+        return;
+      }
+      
+      markPortageMode = true;
+      portageClicks = [];
+      btnMarkPortage.textContent = '❌ Cancel';
+      btnMarkPortage.classList.add('active');
+      
+      log('Click on the trail near the START of the portage', 'info');
+      
+      // Add click handler for the map
+      map.on('click', handlePortageClick);
+      map.getCanvas().style.cursor = 'crosshair';
+    }
+    
+    function cancelMarkPortageMode() {
+      markPortageMode = false;
+      portageClicks = [];
+      btnMarkPortage.textContent = '🏕️ Mark Portage';
+      btnMarkPortage.classList.remove('active');
+      map.off('click', handlePortageClick);
+      map.getCanvas().style.cursor = '';
+      
+      // Remove any temp markers
+      portageMarkers.forEach(m => m.remove());
+      portageMarkers = [];
+    }
+    
+    async function handlePortageClick(e) {
+      if (!markPortageMode) return;
+      
+      const lngLat = e.lngLat;
+      portageClicks.push([lngLat.lng, lngLat.lat]);
+      
+      // Add a marker at the click point
+      const marker = new mapboxgl.Marker({ color: portageClicks.length === 1 ? '#4caf50' : '#f44336' })
+        .setLngLat(lngLat)
+        .addTo(map);
+      portageMarkers.push(marker);
+      
+      if (portageClicks.length === 1) {
+        log('Now click near the END of the portage', 'info');
+      } else if (portageClicks.length === 2) {
+        // We have both points - find and mark the portage
+        await findAndMarkPortage(portageClicks[0], portageClicks[1]);
+        cancelMarkPortageMode();
+      }
+    }
+    
+    async function findAndMarkPortage(startPoint, endPoint) {
+      showLoading(true);
+      
+      try {
+        const res = await fetch('/api/draw/mark-portage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trailId: currentTrail.id,
+            startPoint: startPoint,
+            endPoint: endPoint
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          if (data.portage) {
+            log(`Marked portage: ${data.portage.name} (${data.portage.distanceM}m, ${data.portage.difficulty})`, 'success');
+          } else {
+            log('Portage section marked (no nearby landing found for auto-fill)', 'warning');
+          }
+          await loadTrail(currentTrail.id);
+        } else {
+          log('Mark portage failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        log('Mark portage failed: ' + err.message, 'error');
       } finally {
         showLoading(false);
       }

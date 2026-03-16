@@ -402,6 +402,126 @@ router.post('/undo', async (req, res, next) => {
 });
 
 /**
+ * POST /api/draw/mark-portage
+ * Mark a section of trail as a portage with auto-detected attributes
+ */
+router.post('/mark-portage', async (req, res, next) => {
+  try {
+    const { trailId, startPoint, endPoint } = req.body;
+    
+    if (!trailId || !startPoint || !endPoint) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PARAMS', message: 'trailId, startPoint, and endPoint required' }
+      });
+    }
+    
+    // Get current trail
+    const trailResult = await query(`
+      SELECT 
+        metadata,
+        ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry
+      FROM trail_edits WHERE id = $1
+    `, [trailId]);
+    
+    if (trailResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'TRAIL_NOT_FOUND', message: `Trail ${trailId} not found` }
+      });
+    }
+    
+    const trail = trailResult.rows[0];
+    const metadata = trail.metadata || {};
+    
+    // Find the line fractions for the clicked points
+    const fractionResult = await query(`
+      WITH trail AS (
+        SELECT COALESCE(edited_geometry, original_geometry) as geom
+        FROM trail_edits WHERE id = $1
+      )
+      SELECT 
+        ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($2, $3), 4326)) as start_frac,
+        ST_LineLocatePoint(t.geom, ST_SetSRID(ST_MakePoint($4, $5), 4326)) as end_frac
+      FROM trail t
+    `, [trailId, startPoint[0], startPoint[1], endPoint[0], endPoint[1]]);
+    
+    let startFrac = fractionResult.rows[0].start_frac;
+    let endFrac = fractionResult.rows[0].end_frac;
+    
+    // Ensure start < end
+    if (startFrac > endFrac) {
+      [startFrac, endFrac] = [endFrac, startFrac];
+    }
+    
+    // Find nearby portage landings to auto-detect attributes
+    const landingResult = await query(`
+      WITH trail AS (
+        SELECT COALESCE(edited_geometry, original_geometry) as geom
+        FROM trail_edits WHERE id = $1
+      ),
+      segment AS (
+        SELECT ST_LineSubstring(t.geom, $2, $3) as geom
+        FROM trail t
+      )
+      SELECT 
+        p.name, p.portage_id, p.distance_m, p.distance_rods, p.difficulty,
+        ST_Distance(p.geom::geography, s.geom::geography) as dist_m
+      FROM "boundary-waters".bwca_portage_landings p, segment s
+      WHERE ST_DWithin(p.geom::geography, s.geom::geography, 100)
+      ORDER BY dist_m
+      LIMIT 1
+    `, [trailId, startFrac, endFrac]);
+    
+    // Build portage info
+    let portageInfo = {
+      startFraction: startFrac,
+      endFraction: endFrac,
+      markedAt: new Date().toISOString()
+    };
+    
+    if (landingResult.rows.length > 0) {
+      const landing = landingResult.rows[0];
+      portageInfo = {
+        ...portageInfo,
+        portageId: landing.portage_id,
+        name: `Portage ${landing.name}`,
+        distanceM: landing.distance_m,
+        distanceRods: landing.distance_rods,
+        difficulty: landing.difficulty
+      };
+    }
+    
+    // Add to metadata.portages array
+    if (!metadata.portages) {
+      metadata.portages = [];
+    }
+    metadata.portages.push(portageInfo);
+    
+    // Update trail metadata
+    await query(`
+      UPDATE trail_edits
+      SET metadata = $2, updated_at = NOW()
+      WHERE id = $1
+    `, [trailId, JSON.stringify(metadata)]);
+    
+    // Notify via WebSocket
+    const io = req.app.get('io');
+    io.emit('trail:updated', { trailId, operation: 'mark_portage' });
+    
+    res.json({
+      success: true,
+      trailId,
+      portage: portageInfo.name ? portageInfo : null,
+      totalPortages: metadata.portages.length
+    });
+    
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/draw/snap-portage
  * Snap trail to Mapbox basemap path features
  */
