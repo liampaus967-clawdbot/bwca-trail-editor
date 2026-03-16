@@ -126,6 +126,32 @@
       white-space: nowrap;
     }
     
+    .status-toggle {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #0f3460;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    
+    .status-toggle.show {
+      display: flex;
+    }
+    
+    .status-toggle input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    
+    .status-toggle.completed {
+      background: #1b5e20;
+    }
+    
     button {
       padding: 10px 15px;
       border: none;
@@ -377,6 +403,10 @@
           <div class="trail-name" id="trail-name">No trail selected</div>
           <div class="trail-stats" id="trail-stats">-</div>
         </div>
+        <label class="status-toggle" id="status-toggle">
+          <input type="checkbox" id="chk-complete">
+          <span>✅ Mark Complete</span>
+        </label>
       </div>
       
       <div class="panel compact">
@@ -653,6 +683,8 @@
     const btnCreate = document.getElementById('btn-create');
     const btnUndo = document.getElementById('btn-undo');
     const trailSelect = document.getElementById('trail-select');
+    const statusToggle = document.getElementById('status-toggle');
+    const chkComplete = document.getElementById('chk-complete');
     
     // Modal elements
     const createModal = document.getElementById('create-modal');
@@ -673,6 +705,7 @@
     btnSimplify.onclick = () => simplifyTrail();
     btnCreate.onclick = () => showCreateModal();
     btnUndo.onclick = () => undoLast();
+    chkComplete.onchange = () => toggleComplete();
     
     // Modal handlers
     modalCancel.onclick = () => hideCreateModal();
@@ -923,6 +956,12 @@
       btnEdit.disabled = false;
       btnSimplify.disabled = false;
       btnUndo.disabled = false;
+      
+      // Show status toggle and set state
+      statusToggle.classList.add('show');
+      const isComplete = data.trail.status === 'completed';
+      chkComplete.checked = isComplete;
+      statusToggle.classList.toggle('completed', isComplete);
       
       // Reset edit mode when loading new trail
       if (isEditing) {
@@ -1305,6 +1344,35 @@
         log('Clear portages failed: ' + err.message, 'error');
       } finally {
         showLoading(false);
+      }
+    }
+    
+    async function toggleComplete() {
+      if (!currentTrail) return;
+      
+      const newStatus = chkComplete.checked ? 'completed' : 'pending';
+      
+      try {
+        const res = await fetch('/api/session/trail/' + currentTrail.id + '/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Trail marked as ${newStatus}`, 'success');
+          statusToggle.classList.toggle('completed', chkComplete.checked);
+          // Update dropdown text
+          await populateTrailDropdown();
+          trailSelect.value = currentTrail.id;
+        } else {
+          chkComplete.checked = !chkComplete.checked; // revert
+          log('Status update failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        chkComplete.checked = !chkComplete.checked; // revert
+        log('Status update failed: ' + err.message, 'error');
       }
     }
     

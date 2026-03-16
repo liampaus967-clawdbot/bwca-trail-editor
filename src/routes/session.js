@@ -193,6 +193,39 @@ router.get('/queue/next', async (req, res, next) => {
 });
 
 /**
+ * POST /api/session/trail/:trailId/status
+ * Update trail status (pending, in_progress, completed)
+ */
+router.post('/trail/:trailId/status', async (req, res, next) => {
+  try {
+    const { trailId } = req.params;
+    const { status } = req.body;
+    
+    if (!['pending', 'in_progress', 'completed', 'skipped'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid status' }
+      });
+    }
+    
+    await query(`
+      UPDATE trail_edits
+      SET status = $2, updated_at = NOW()
+      WHERE id = $1
+    `, [trailId, status]);
+    
+    res.json({
+      success: true,
+      trailId,
+      status
+    });
+    
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/trail/:trailId/complete
  * Mark trail as completed
  */
