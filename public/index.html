@@ -454,7 +454,7 @@
       });
       
       // Add NHD
-      if (data.nearbyNHD.length > 0) {
+      if (data.nearbyNHD && data.nearbyNHD.length > 0) {
         map.addSource('nhd', {
           type: 'geojson',
           data: {
@@ -474,8 +474,48 @@
         });
       }
       
-      // Add original trail
-      // (would add more layers here)
+      // Add original trail (red dashed)
+      if (data.analysis && data.analysis.originalGeometry) {
+        map.addSource('original', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: data.analysis.originalGeometry,
+            properties: {}
+          }
+        });
+        map.addLayer({
+          id: 'original-layer',
+          type: 'line',
+          source: 'original',
+          paint: { 
+            'line-color': '#ff3333', 
+            'line-width': 3,
+            'line-dasharray': [2, 2]
+          }
+        });
+      }
+      
+      // Add edited trail (green) if exists
+      if (data.analysis && data.analysis.editedGeometry) {
+        map.addSource('edited', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: data.analysis.editedGeometry,
+            properties: {}
+          }
+        });
+        map.addLayer({
+          id: 'edited-layer',
+          type: 'line',
+          source: 'edited',
+          paint: { 
+            'line-color': '#00cc44', 
+            'line-width': 4
+          }
+        });
+      }
     }
     
     async function snapCurrentTrail() {

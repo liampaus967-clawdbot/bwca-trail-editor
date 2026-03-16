@@ -227,6 +227,8 @@ export async function analyzeTrail(trailId) {
   const trailResult = await query(`
     SELECT 
       id, trail_name, status,
+      ST_AsGeoJSON(original_geometry)::json as original_geometry,
+      ST_AsGeoJSON(edited_geometry)::json as edited_geometry,
       ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry,
       ST_Length(COALESCE(edited_geometry, original_geometry)::geography) as length_m
     FROM trail_edits
@@ -239,6 +241,8 @@ export async function analyzeTrail(trailId) {
   
   const trail = trailResult.rows[0];
   const geometry = trail.geometry;
+  const originalGeometry = trail.original_geometry;
+  const editedGeometry = trail.edited_geometry;
   
   // Find nearby NHD
   const nearbyNHD = await findNearestNHD(geometry, 200, 20);
@@ -305,6 +309,8 @@ export async function analyzeTrail(trailId) {
     status: trail.status,
     lengthM: parseFloat(trail.length_m),
     geometry,
+    originalGeometry,
+    editedGeometry,
     nearbyNHD,
     nhdOverlapPercent: Math.round(overlapPercent * 10) / 10,
     parallelTrails,
