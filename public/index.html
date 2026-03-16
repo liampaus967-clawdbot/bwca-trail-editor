@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BWCA Trail Editor</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+    
+    .sidebar {
+      width: 350px;
+      background: #1a1a2e;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .sidebar-header {
+      padding: 20px;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+    }
+    
+    .sidebar-header h1 {
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+    
+    .sidebar-header .subtitle {
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .progress-bar {
+      margin-top: 15px;
+      background: #0f3460;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00b4d8, #0077b6);
+      transition: width 0.3s;
+    }
+    
+    .progress-text {
+      font-size: 11px;
+      color: #888;
+      margin-top: 5px;
+    }
+    
+    .panel {
+      padding: 15px;
+      border-bottom: 1px solid #0f3460;
+    }
+    
+    .panel-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    
+    .trail-info {
+      background: #16213e;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    
+    .trail-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .trail-stats {
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .recommendation {
+      background: #0f3460;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    
+    .recommendation.snap { border-left: 3px solid #00b4d8; }
+    .recommendation.keep { border-left: 3px solid #4caf50; }
+    .recommendation.consolidate { border-left: 3px solid #ff9800; }
+    
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    button:hover { transform: translateY(-1px); }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      color: #fff;
+    }
+    
+    .btn-secondary {
+      background: #0f3460;
+      color: #fff;
+    }
+    
+    .btn-skip {
+      background: transparent;
+      color: #888;
+      border: 1px solid #333;
+    }
+    
+    .log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    
+    .log-entry {
+      font-size: 12px;
+      padding: 8px;
+      margin-bottom: 5px;
+      background: #16213e;
+      border-radius: 4px;
+      border-left: 3px solid #333;
+    }
+    
+    .log-entry.success { border-left-color: #4caf50; }
+    .log-entry.info { border-left-color: #00b4d8; }
+    .log-entry.warning { border-left-color: #ff9800; }
+    
+    .log-time {
+      color: #666;
+      font-size: 10px;
+    }
+    
+    .legend {
+      padding: 15px;
+      background: #16213e;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    
+    .legend-color {
+      width: 20px;
+      height: 3px;
+      border-radius: 2px;
+    }
+    
+    .loading {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      padding: 20px 40px;
+      border-radius: 8px;
+      color: #fff;
+      z-index: 1000;
+    }
+    
+    .loading.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="map"></div>
+    
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>🛶 BWCA Trail Editor</h1>
+        <div class="subtitle">AI-Assisted GIS Tool</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-text" id="progress-text">Loading...</div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-title">Current Trail</div>
+        <div class="trail-info" id="trail-info">
+          <div class="trail-name" id="trail-name">No trail selected</div>
+          <div class="trail-stats" id="trail-stats">-</div>
+        </div>
+        <div class="recommendation" id="recommendation" style="display:none">
+          <strong>Recommendation:</strong> <span id="rec-text"></span>
+        </div>
+      </div>
+      
+      <div class="panel">
+        <div class="panel-title">Actions</div>
+        <div class="actions">
+          <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
+          <button class="btn-secondary" id="btn-next">Next Trail</button>
+          <button class="btn-secondary" id="btn-undo" disabled>Undo</button>
+          <button class="btn-skip" id="btn-skip" disabled>Skip Trail</button>
+        </div>
+      </div>
+      
+      <div class="log" id="log">
+        <div class="log-entry info">
+          <div>Welcome! Click "Next Trail" to begin.</div>
+          <div class="log-time">System</div>
+        </div>
+      </div>
+      
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #0066ff"></div>
+          <span>NHD Flowlines</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ff3333"></div>
+          <span>Original Trail</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #00cc44"></div>
+          <span>Edited Trail</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ffcc00"></div>
+          <span>Current Working</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="loading" id="loading">Processing...</div>
+
+  <script>
+    // Initialize Mapbox
+    mapboxgl.accessToken = 'YOUR_MAPBOX_PUBLIC_TOKEN';
+    
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      center: [-91.5, 48.0],
+      zoom: 8
+    });
+    
+    // State
+    let currentTrail = null;
+    let session = null;
+    
+    // Socket.io
+    const socket = io();
+    
+    socket.on('trail:updated', (data) => {
+      log(`Trail ${data.trailId} updated (${data.operation})`, 'success');
+      if (data.trailId === currentTrail?.id) {
+        loadTrail(data.trailId);
+      }
+    });
+    
+    // DOM elements
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const trailName = document.getElementById('trail-name');
+    const trailStats = document.getElementById('trail-stats');
+    const recommendation = document.getElementById('recommendation');
+    const recText = document.getElementById('rec-text');
+    const logEl = document.getElementById('log');
+    const loading = document.getElementById('loading');
+    
+    const btnSnap = document.getElementById('btn-snap');
+    const btnNext = document.getElementById('btn-next');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnSkip = document.getElementById('btn-skip');
+    
+    // Event listeners
+    btnNext.onclick = () => loadNextTrail();
+    btnSnap.onclick = () => snapCurrentTrail();
+    btnUndo.onclick = () => undoLast();
+    btnSkip.onclick = () => skipTrail();
+    
+    // Functions
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `
+        <div>${message}</div>
+        <div class="log-time">${new Date().toLocaleTimeString()}</div>
+      `;
+      logEl.insertBefore(entry, logEl.firstChild);
+    }
+    
+    function showLoading(show) {
+      loading.className = show ? 'loading show' : 'loading';
+    }
+    
+    async function loadSession() {
+      const res = await fetch('/api/session');
+      session = await res.json();
+      updateProgress();
+    }
+    
+    function updateProgress() {
+      if (!session) return;
+      const { progress } = session;
+      const pct = Math.round((progress.completed / progress.total) * 100);
+      progressFill.style.width = pct + '%';
+      progressText.textContent = `${progress.completed}/${progress.total} completed (${progress.skipped} skipped)`;
+    }
+    
+    async function loadNextTrail() {
+      showLoading(true);
+      try {
+        const res = await fetch('/api/session/queue/next');
+        const data = await res.json();
+        
+        if (!data.trail) {
+          log('All trails completed!', 'success');
+          return;
+        }
+        
+        await loadTrail(data.trail.id);
+        log(`Loaded: ${data.trail.name} (${data.suggestedApproach})`, 'info');
+        
+      } catch (err) {
+        log('Error loading trail: ' + err.message, 'warning');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    async function loadTrail(trailId) {
+      const res = await fetch(`/api/view/trail/${trailId}`);
+      const data = await res.json();
+      
+      currentTrail = data.trail;
+      
+      trailName.textContent = data.trail.name;
+      trailStats.textContent = `${Math.round(data.trail.lengthM)}m • ${data.nearbyNHD.length} nearby NHD`;
+      
+      if (data.analysis.recommendation) {
+        recommendation.style.display = 'block';
+        recommendation.className = `recommendation ${data.analysis.recommendation}`;
+        recText.textContent = data.analysis.recommendation.replace(/_/g, ' ');
+      }
+      
+      btnSnap.disabled = data.nearbyNHD.length === 0;
+      btnSkip.disabled = false;
+      btnUndo.disabled = false;
+      
+      // Update map
+      updateMapLayers(data);
+      
+      // Fit bounds
+      if (data.bounds) {
+        map.fitBounds([
+          [data.bounds[0], data.bounds[1]],
+          [data.bounds[2], data.bounds[3]]
+        ], { padding: 50 });
+      }
+    }
+    
+    function updateMapLayers(data) {
+      // Remove existing layers
+      ['nhd', 'original', 'edited', 'highlight'].forEach(id => {
+        if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
+        if (map.getSource(id)) map.removeSource(id);
+      });
+      
+      // Add NHD
+      if (data.nearbyNHD.length > 0) {
+        map.addSource('nhd', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: data.nearbyNHD.map(n => ({
+              type: 'Feature',
+              geometry: n.geometry,
+              properties: { name: n.gnisName }
+            }))
+          }
+        });
+        map.addLayer({
+          id: 'nhd-layer',
+          type: 'line',
+          source: 'nhd',
+          paint: { 'line-color': '#0066ff', 'line-width': 3 }
+        });
+      }
+      
+      // Add original trail
+      // (would add more layers here)
+    }
+    
+    async function snapCurrentTrail() {
+      if (!currentTrail) return;
+      
+      showLoading(true);
+      try {
+        const analysisRes = await fetch(`/api/analyze/trail/${currentTrail.id}`);
+        const analysis = await analysisRes.json();
+        
+        const res = await fetch('/api/draw/snap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trailId: currentTrail.id,
+            nhdIds: analysis.suggestedNHDIds
+          })
+        });
+        
+        const data = await res.json();
+        log(`Snapped to ${analysis.suggestedNHDIds.length} NHD segments`, 'success');
+        
+        await loadTrail(currentTrail.id);
+        
+      } catch (err) {
+        log('Snap failed: ' + err.message, 'warning');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    async function undoLast() {
+      if (!currentTrail) return;
+      
+      const res = await fetch('/api/draw/undo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trailId: currentTrail.id })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        log('Undid last operation', 'info');
+        await loadTrail(currentTrail.id);
+      }
+    }
+    
+    async function skipTrail() {
+      if (!currentTrail) return;
+      
+      await fetch(`/api/session/trail/${currentTrail.id}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'skipped' })
+      });
+      
+      log(`Skipped: ${currentTrail.name}`, 'warning');
+      await loadSession();
+      await loadNextTrail();
+    }
+    
+    // Initialize
+    map.on('load', async () => {
+      await loadSession();
+      log('Ready! Click "Next Trail" to start editing.', 'success');
+    });
+  </script>
+</body>
+</html>
