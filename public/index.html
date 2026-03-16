@@ -385,7 +385,8 @@
       
       socket.on('trail:updated', (data) => {
         log(`Trail ${data.trailId} updated (${data.operation})`, 'success');
-        if (data.trailId === currentTrail?.id) {
+        // Don't reload while editing - user is actively modifying
+        if (data.trailId === currentTrail?.id && !isEditing) {
           loadTrail(data.trailId);
         }
       });
