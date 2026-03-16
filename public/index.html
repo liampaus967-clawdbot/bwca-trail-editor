@@ -405,6 +405,10 @@
           <span>Edited Trail</span>
         </div>
         <div class="legend-item">
+          <div class="legend-color" style="background: #ff9800; height: 5px;"></div>
+          <span>Portage Section</span>
+        </div>
+        <div class="legend-item">
           <div class="legend-color" style="background: #ffcc00"></div>
           <span>Current Working</span>
         </div>
@@ -927,7 +931,7 @@
     
     function updateMapLayers(data) {
       // Remove existing layers
-      ['nhd', 'original', 'edited', 'highlight'].forEach(id => {
+      ['nhd', 'original', 'edited', 'highlight', 'portage-segments'].forEach(id => {
         if (map.getLayer(id + '-layer')) map.removeLayer(id + '-layer');
         if (map.getSource(id)) map.removeSource(id);
       });
@@ -994,6 +998,58 @@
             'line-width': 4
           }
         });
+      }
+      
+      // Add portage segments (brown/orange, thicker) if any exist
+      if (data.analysis && data.analysis.portageSegments && data.analysis.portageSegments.length > 0) {
+        map.addSource('portage-segments', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: data.analysis.portageSegments.map(p => ({
+              type: 'Feature',
+              geometry: p.geometry,
+              properties: {
+                name: p.name || 'Unmarked Portage',
+                distanceM: p.distanceM,
+                distanceRods: p.distanceRods,
+                difficulty: p.difficulty || 'unknown'
+              }
+            }))
+          }
+        });
+        
+        map.addLayer({
+          id: 'portage-segments-layer',
+          type: 'line',
+          source: 'portage-segments',
+          paint: { 
+            'line-color': '#ff9800', 
+            'line-width': 6
+          }
+        });
+        
+        // Add click handler for portage segments
+        map.on('click', 'portage-segments-layer', (e) => {
+          const props = e.features[0].properties;
+          new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <strong>${props.name}</strong><br>
+              ${props.distanceM ? `${props.distanceM}m (${props.distanceRods} rods)<br>` : ''}
+              Difficulty: ${props.difficulty}
+            `)
+            .addTo(map);
+        });
+        
+        map.on('mouseenter', 'portage-segments-layer', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'portage-segments-layer', () => {
+          map.getCanvas().style.cursor = '';
+        });
+        
+        log(`Trail has ${data.analysis.portageSegments.length} marked portage(s)`, 'info');
       }
     }
     

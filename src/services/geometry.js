@@ -226,7 +226,7 @@ export async function analyzeTrail(trailId) {
   // Get trail geometry
   const trailResult = await query(`
     SELECT 
-      id, trail_name, status,
+      id, trail_name, status, metadata,
       ST_AsGeoJSON(original_geometry)::json as original_geometry,
       ST_AsGeoJSON(edited_geometry)::json as edited_geometry,
       ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry,
@@ -243,6 +243,27 @@ export async function analyzeTrail(trailId) {
   const geometry = trail.geometry;
   const originalGeometry = trail.original_geometry;
   const editedGeometry = trail.edited_geometry;
+  const metadata = trail.metadata || {};
+  
+  // Get portage segment geometries if any exist
+  let portageSegments = [];
+  if (metadata.portages && metadata.portages.length > 0) {
+    for (const p of metadata.portages) {
+      const segResult = await query(`
+        SELECT ST_AsGeoJSON(
+          ST_LineSubstring(COALESCE(edited_geometry, original_geometry), $2, $3)
+        )::json as geometry
+        FROM trail_edits WHERE id = $1
+      `, [trailId, p.startFraction, p.endFraction]);
+      
+      if (segResult.rows[0]?.geometry) {
+        portageSegments.push({
+          ...p,
+          geometry: segResult.rows[0].geometry
+        });
+      }
+    }
+  }
   
   // Find nearby NHD
   const nearbyNHD = await findNearestNHD(geometry, 200, 20);
@@ -283,7 +304,8 @@ export async function analyzeTrail(trailId) {
     nhdOverlapPercent: Math.round(overlapPercent * 10) / 10,
     parallelTrails,
     recommendation,
-    suggestedNHDIds: nearbyNHD.slice(0, 5).map(n => n.nhdId)
+    suggestedNHDIds: nearbyNHD.slice(0, 5).map(n => n.nhdId),
+    portageSegments
   };
 }
 
