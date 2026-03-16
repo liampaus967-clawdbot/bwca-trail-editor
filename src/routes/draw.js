@@ -587,6 +587,59 @@ router.post('/mark-portage', async (req, res, next) => {
 });
 
 /**
+ * POST /api/draw/clear-portages
+ * Clear all portages from a trail
+ */
+router.post('/clear-portages', async (req, res, next) => {
+  try {
+    const { trailId } = req.body;
+    
+    if (!trailId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PARAMS', message: 'trailId required' }
+      });
+    }
+    
+    // Get current metadata
+    const result = await query(`
+      SELECT metadata FROM trail_edits WHERE id = $1
+    `, [trailId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'TRAIL_NOT_FOUND', message: `Trail ${trailId} not found` }
+      });
+    }
+    
+    const metadata = result.rows[0].metadata || {};
+    const clearedCount = metadata.portages ? metadata.portages.length : 0;
+    
+    // Remove portages
+    delete metadata.portages;
+    
+    // Update
+    await query(`
+      UPDATE trail_edits SET metadata = $2, updated_at = NOW() WHERE id = $1
+    `, [trailId, JSON.stringify(metadata)]);
+    
+    // Notify
+    const io = req.app.get('io');
+    io.emit('trail:updated', { trailId, operation: 'clear_portages' });
+    
+    res.json({
+      success: true,
+      trailId,
+      clearedCount
+    });
+    
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/draw/snap-portage
  * Snap trail to Mapbox basemap path features
  */

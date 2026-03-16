@@ -173,6 +173,11 @@
       animation: pulse 1s infinite;
     }
     
+    .btn-clear-portages {
+      background: #f44336;
+      color: #fff;
+    }
+    
     .btn-create {
       background: #2196f3;
       color: #fff;
@@ -372,6 +377,7 @@
           <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
           <button class="btn-portage" id="btn-portage" disabled>🥾 Snap Portage</button>
           <button class="btn-mark-portage" id="btn-mark-portage" disabled>🏕️ Mark Portage</button>
+          <button class="btn-clear-portages" id="btn-clear-portages" disabled>🗑️ Clear Portages</button>
           <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
           <button class="btn-simplify" id="btn-simplify" disabled>🔧 Simplify</button>
           <button class="btn-create" id="btn-create">➕ Create New</button>
@@ -631,6 +637,7 @@
     const btnSnap = document.getElementById('btn-snap');
     const btnPortage = document.getElementById('btn-portage');
     const btnMarkPortage = document.getElementById('btn-mark-portage');
+    const btnClearPortages = document.getElementById('btn-clear-portages');
     const btnEdit = document.getElementById('btn-edit');
     const btnSimplify = document.getElementById('btn-simplify');
     const btnCreate = document.getElementById('btn-create');
@@ -651,6 +658,7 @@
     btnSnap.onclick = () => snapCurrentTrail();
     btnPortage.onclick = () => snapToPortage();
     btnMarkPortage.onclick = () => startMarkPortageMode();
+    btnClearPortages.onclick = () => clearPortages();
     btnEdit.onclick = () => toggleEditMode();
     btnSimplify.onclick = () => simplifyTrail();
     btnCreate.onclick = () => showCreateModal();
@@ -905,6 +913,7 @@
       btnSnap.disabled = data.nearbyNHD.length === 0;
       btnPortage.disabled = false;
       btnMarkPortage.disabled = false;
+      btnClearPortages.disabled = !(data.analysis.portageSegments && data.analysis.portageSegments.length > 0);
       btnEdit.disabled = false;
       btnSimplify.disabled = false;
       btnUndo.disabled = false;
@@ -1261,6 +1270,33 @@
         }
       } catch (err) {
         log('Mark portage failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    async function clearPortages() {
+      if (!currentTrail) return;
+      
+      if (!confirm('Clear all portages from this trail?')) return;
+      
+      showLoading(true);
+      try {
+        const res = await fetch('/api/draw/clear-portages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trailId: currentTrail.id })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          log(`Cleared ${data.clearedCount} portage(s)`, 'success');
+          await loadTrail(currentTrail.id);
+        } else {
+          log('Clear portages failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        log('Clear portages failed: ' + err.message, 'error');
       } finally {
         showLoading(false);
       }
