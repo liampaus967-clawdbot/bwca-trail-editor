@@ -402,6 +402,63 @@ router.post('/undo', async (req, res, next) => {
 });
 
 /**
+ * POST /api/draw/create
+ * Create a new trail with geometry
+ */
+router.post('/create', async (req, res, next) => {
+  try {
+    const { trailId, trailName, geometry } = req.body;
+    
+    if (!trailName || !geometry) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PARAMS', message: 'trailName and geometry required' }
+      });
+    }
+    
+    // Generate ID if not provided
+    const id = trailId || `trail_${Date.now()}`;
+    
+    // Check if ID already exists
+    const existingResult = await query(`SELECT id FROM trail_edits WHERE id = $1`, [id]);
+    if (existingResult.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'ID_EXISTS', message: `Trail ID ${id} already exists` }
+      });
+    }
+    
+    // Get current session
+    const sessionResult = await query(`
+      SELECT id FROM edit_sessions ORDER BY created_at DESC LIMIT 1
+    `);
+    const sessionId = sessionResult.rows[0]?.id;
+    
+    // Insert new trail
+    await query(`
+      INSERT INTO trail_edits (id, session_id, trail_name, status, original_geometry, created_at, updated_at)
+      VALUES ($1, $2, $3, 'pending', ST_SetSRID(ST_GeomFromGeoJSON($4), 4326), NOW(), NOW())
+    `, [id, sessionId, trailName, JSON.stringify(geometry)]);
+    
+    // Notify via WebSocket
+    const io = req.app.get('io');
+    io.emit('trail:created', { trailId: id, trailName });
+    
+    res.json({
+      success: true,
+      trail: {
+        id,
+        name: trailName,
+        vertexCount: geometry.coordinates ? geometry.coordinates.length : 0
+      }
+    });
+    
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * POST /api/draw/simplify
  * Simplify trail geometry (reduce vertices)
  */

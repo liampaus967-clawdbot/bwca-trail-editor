@@ -158,6 +158,72 @@
       color: #fff;
     }
     
+    .btn-create {
+      background: #2196f3;
+      color: #fff;
+    }
+    
+    .btn-create.drawing {
+      background: #4caf50;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal.show {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: #1a1a2e;
+      padding: 25px;
+      border-radius: 10px;
+      min-width: 350px;
+      color: #fff;
+    }
+    
+    .modal-content h3 {
+      margin-bottom: 15px;
+    }
+    
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      background: #16213e;
+      color: #fff;
+      font-size: 14px;
+    }
+    
+    .modal-content input:focus {
+      outline: none;
+      border-color: #00b4d8;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    
     .trail-select {
       width: 100%;
       padding: 10px;
@@ -276,6 +342,7 @@
           <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
           <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
           <button class="btn-simplify" id="btn-simplify" disabled>🔧 Simplify</button>
+          <button class="btn-create" id="btn-create">➕ Create New</button>
           <button class="btn-secondary" id="btn-next">Next Trail</button>
           <button class="btn-secondary" id="btn-undo" disabled>Undo</button>
           <button class="btn-skip" id="btn-skip" disabled>Skip Trail</button>
@@ -311,6 +378,21 @@
   </div>
   
   <div class="loading" id="loading">Processing...</div>
+  
+  <!-- Create Trail Modal -->
+  <div class="modal" id="create-modal">
+    <div class="modal-content">
+      <h3>➕ Create New Trail</h3>
+      <label>Trail Name:</label>
+      <input type="text" id="new-trail-name" placeholder="e.g., Knife Lake Portage">
+      <label>Trail ID (optional):</label>
+      <input type="text" id="new-trail-id" placeholder="Auto-generated if empty">
+      <div class="modal-buttons">
+        <button class="btn-secondary" id="modal-cancel">Cancel</button>
+        <button class="btn-primary" id="modal-start-draw">Start Drawing</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // State
@@ -451,10 +533,18 @@
     const btnSnap = document.getElementById('btn-snap');
     const btnEdit = document.getElementById('btn-edit');
     const btnSimplify = document.getElementById('btn-simplify');
+    const btnCreate = document.getElementById('btn-create');
     const btnNext = document.getElementById('btn-next');
     const btnUndo = document.getElementById('btn-undo');
     const btnSkip = document.getElementById('btn-skip');
     const trailSelect = document.getElementById('trail-select');
+    
+    // Modal elements
+    const createModal = document.getElementById('create-modal');
+    const newTrailName = document.getElementById('new-trail-name');
+    const newTrailId = document.getElementById('new-trail-id');
+    const modalCancel = document.getElementById('modal-cancel');
+    const modalStartDraw = document.getElementById('modal-start-draw');
     
     // Event listeners
     btnNext.onclick = () => loadNextTrail();
@@ -464,8 +554,13 @@
     btnSnap.onclick = () => snapCurrentTrail();
     btnEdit.onclick = () => toggleEditMode();
     btnSimplify.onclick = () => simplifyTrail();
+    btnCreate.onclick = () => showCreateModal();
     btnUndo.onclick = () => undoLast();
     btnSkip.onclick = () => skipTrail();
+    
+    // Modal handlers
+    modalCancel.onclick = () => hideCreateModal();
+    modalStartDraw.onclick = () => startDrawingNewTrail();
     
     // Toggle edit mode
     function toggleEditMode() {
@@ -519,6 +614,107 @@
             });
           }
         });
+    }
+    
+    // Create new trail functions
+    let isDrawingNew = false;
+    let pendingTrailName = '';
+    let pendingTrailId = '';
+    
+    function showCreateModal() {
+      newTrailName.value = '';
+      newTrailId.value = '';
+      createModal.classList.add('show');
+      newTrailName.focus();
+    }
+    
+    function hideCreateModal() {
+      createModal.classList.remove('show');
+    }
+    
+    function startDrawingNewTrail() {
+      pendingTrailName = newTrailName.value.trim();
+      pendingTrailId = newTrailId.value.trim();
+      
+      if (!pendingTrailName) {
+        alert('Please enter a trail name');
+        return;
+      }
+      
+      hideCreateModal();
+      isDrawingNew = true;
+      
+      // Update button to show we're in drawing mode
+      btnCreate.textContent = '✅ Finish Drawing';
+      btnCreate.classList.add('drawing');
+      btnCreate.onclick = finishDrawingNewTrail;
+      
+      // Clear any existing drawings and enter line draw mode
+      draw.deleteAll();
+      draw.changeMode('draw_line_string');
+      
+      log(`Drawing new trail: "${pendingTrailName}" - Click to add points, double-click to finish`, 'info');
+    }
+    
+    async function finishDrawingNewTrail() {
+      const features = draw.getAll();
+      
+      if (features.features.length === 0) {
+        log('No geometry drawn - cancelling', 'warning');
+        cancelDrawingNewTrail();
+        return;
+      }
+      
+      const geometry = features.features[0].geometry;
+      
+      if (geometry.coordinates.length < 2) {
+        log('Need at least 2 points - keep drawing', 'warning');
+        return;
+      }
+      
+      showLoading(true);
+      try {
+        const res = await fetch('/api/draw/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trailId: pendingTrailId || null,
+            trailName: pendingTrailName,
+            geometry: geometry
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          log(`Created trail: ${data.trail.id} - ${data.trail.name}`, 'success');
+          
+          // Reset state
+          cancelDrawingNewTrail();
+          
+          // Refresh trail list and load new trail
+          await populateTrailDropdown();
+          await loadTrail(data.trail.id);
+          trailSelect.value = data.trail.id;
+        } else {
+          log('Create failed: ' + data.error?.message, 'error');
+        }
+      } catch (err) {
+        log('Create failed: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    function cancelDrawingNewTrail() {
+      isDrawingNew = false;
+      pendingTrailName = '';
+      pendingTrailId = '';
+      btnCreate.textContent = '➕ Create New';
+      btnCreate.classList.remove('drawing');
+      btnCreate.onclick = showCreateModal;
+      draw.deleteAll();
+      draw.changeMode('simple_select');
     }
     
     // Functions
