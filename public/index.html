@@ -349,9 +349,7 @@
           <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
           <button class="btn-simplify" id="btn-simplify" disabled>🔧 Simplify</button>
           <button class="btn-create" id="btn-create">➕ Create New</button>
-          <button class="btn-secondary" id="btn-next">Next Trail</button>
           <button class="btn-secondary" id="btn-undo" disabled>Undo</button>
-          <button class="btn-skip" id="btn-skip" disabled>Skip Trail</button>
         </div>
       </div>
       
@@ -541,9 +539,7 @@
     const btnEdit = document.getElementById('btn-edit');
     const btnSimplify = document.getElementById('btn-simplify');
     const btnCreate = document.getElementById('btn-create');
-    const btnNext = document.getElementById('btn-next');
     const btnUndo = document.getElementById('btn-undo');
-    const btnSkip = document.getElementById('btn-skip');
     const trailSelect = document.getElementById('trail-select');
     
     // Modal elements
@@ -554,7 +550,6 @@
     const modalStartDraw = document.getElementById('modal-start-draw');
     
     // Event listeners
-    btnNext.onclick = () => loadNextTrail();
     trailSelect.onchange = () => {
       if (trailSelect.value) loadTrail(trailSelect.value);
     };
@@ -564,7 +559,6 @@
     btnSimplify.onclick = () => simplifyTrail();
     btnCreate.onclick = () => showCreateModal();
     btnUndo.onclick = () => undoLast();
-    btnSkip.onclick = () => skipTrail();
     
     // Modal handlers
     modalCancel.onclick = () => hideCreateModal();
@@ -816,7 +810,6 @@
       btnPortage.disabled = false;
       btnEdit.disabled = false;
       btnSimplify.disabled = false;
-      btnSkip.disabled = false;
       btnUndo.disabled = false;
       
       // Reset edit mode when loading new trail
