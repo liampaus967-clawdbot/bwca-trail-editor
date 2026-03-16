@@ -49,6 +49,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Config endpoint (for frontend to get Mapbox token)
+app.get('/api/config', (req, res) => {
+  res.json({ 
+    mapboxToken: process.env.MAPBOX_TOKEN,
+    snapTolerance: process.env.SNAP_TOLERANCE_M || 50
+  });
+});
+
 // Serve frontend
 app.get('/', (req, res) => {
   res.sendFile(join(__dirname, '../public/index.html'));

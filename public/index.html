@@ -6,6 +6,8 @@
   <title>BWCA Trail Editor</title>
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -141,6 +143,16 @@
       border: 1px solid #333;
     }
     
+    .btn-edit {
+      background: #ff9800;
+      color: #fff;
+    }
+    
+    .btn-edit.active {
+      background: #4caf50;
+      box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    }
+    
     .trail-select {
       width: 100%;
       padding: 10px;
@@ -257,6 +269,7 @@
         <div class="panel-title">Actions</div>
         <div class="actions">
           <button class="btn-primary" id="btn-snap" disabled>Snap to NHD</button>
+          <button class="btn-edit" id="btn-edit" disabled>✏️ Edit Trail</button>
           <button class="btn-secondary" id="btn-next">Next Trail</button>
           <button class="btn-secondary" id="btn-undo" disabled>Undo</button>
           <button class="btn-skip" id="btn-skip" disabled>Skip Trail</button>
@@ -294,29 +307,129 @@
   <div class="loading" id="loading">Processing...</div>
 
   <script>
-    // Initialize Mapbox
-    mapboxgl.accessToken = 'YOUR_MAPBOX_PUBLIC_TOKEN';
-    
-    const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [-91.5, 48.0],
-      zoom: 8
-    });
-    
     // State
+    let map = null;
+    let draw = null;
     let currentTrail = null;
     let session = null;
+    let isEditing = false;
     
-    // Socket.io
-    const socket = io();
+    // Initialize app
+    async function initApp() {
+      // Fetch config from server
+      const configRes = await fetch('/api/config');
+      const config = await configRes.json();
+      
+      // Initialize Mapbox
+      mapboxgl.accessToken = config.mapboxToken;
+      
+      map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/satellite-streets-v12',
+        center: [-91.5, 48.0],
+        zoom: 8
+      });
+      
+      // Initialize Mapbox Draw for polyline editing
+      draw = new MapboxDraw({
+        displayControlsDefault: false,
+        controls: {
+          line_string: false,
+          trash: true
+        },
+        defaultMode: 'simple_select',
+        styles: [
+          // Line style
+          {
+            id: 'gl-draw-line',
+            type: 'line',
+            filter: ['all', ['==', '$type', 'LineString']],
+            paint: {
+              'line-color': '#ffcc00',
+              'line-width': 4
+            }
+          },
+          // Vertex points
+          {
+            id: 'gl-draw-point',
+            type: 'circle',
+            filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex']],
+            paint: {
+              'circle-radius': 6,
+              'circle-color': '#fff',
+              'circle-stroke-color': '#ffcc00',
+              'circle-stroke-width': 2
+            }
+          },
+          // Midpoints
+          {
+            id: 'gl-draw-point-midpoint',
+            type: 'circle',
+            filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint']],
+            paint: {
+              'circle-radius': 4,
+              'circle-color': '#ffcc00'
+            }
+          }
+        ]
+      });
+      
+      map.addControl(draw, 'top-left');
+      
+      // Listen for draw updates
+      map.on('draw.update', handleDrawUpdate);
+      map.on('draw.selectionchange', handleDrawSelection);
+      
+      // Socket.io
+      const socket = io();
+      
+      socket.on('trail:updated', (data) => {
+        log(`Trail ${data.trailId} updated (${data.operation})`, 'success');
+        if (data.trailId === currentTrail?.id) {
+          loadTrail(data.trailId);
+        }
+      });
+      
+      // Wait for map to load
+      map.on('load', async () => {
+        await loadSession();
+        log('Ready! Click "Next Trail" to start editing.', 'success');
+        log('💡 Tip: Click "Edit Trail" to drag vertices', 'info');
+      });
+    }
     
-    socket.on('trail:updated', (data) => {
-      log(`Trail ${data.trailId} updated (${data.operation})`, 'success');
-      if (data.trailId === currentTrail?.id) {
-        loadTrail(data.trailId);
+    // Handle draw updates (when user drags a vertex)
+    async function handleDrawUpdate(e) {
+      if (!currentTrail || !isEditing) return;
+      
+      const feature = e.features[0];
+      if (feature && feature.geometry) {
+        // Save the edited geometry
+        try {
+          const res = await fetch('/api/draw/update-geometry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              trailId: currentTrail.id,
+              geometry: feature.geometry
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            log('Trail geometry updated', 'success');
+          }
+        } catch (err) {
+          log('Failed to save edit: ' + err.message, 'error');
+        }
       }
-    });
+    }
+    
+    function handleDrawSelection(e) {
+      // Could add selection handling here
+    }
+    
+    // Start app
+    initApp();
     
     // DOM elements
     const progressFill = document.getElementById('progress-fill');
@@ -329,6 +442,7 @@
     const loading = document.getElementById('loading');
     
     const btnSnap = document.getElementById('btn-snap');
+    const btnEdit = document.getElementById('btn-edit');
     const btnNext = document.getElementById('btn-next');
     const btnUndo = document.getElementById('btn-undo');
     const btnSkip = document.getElementById('btn-skip');
@@ -340,8 +454,63 @@
       if (trailSelect.value) loadTrail(trailSelect.value);
     };
     btnSnap.onclick = () => snapCurrentTrail();
+    btnEdit.onclick = () => toggleEditMode();
     btnUndo.onclick = () => undoLast();
     btnSkip.onclick = () => skipTrail();
+    
+    // Toggle edit mode
+    function toggleEditMode() {
+      if (!currentTrail) return;
+      
+      isEditing = !isEditing;
+      
+      if (isEditing) {
+        btnEdit.textContent = '✅ Done Editing';
+        btnEdit.classList.add('active');
+        log('Edit mode ON - drag vertices to adjust trail', 'info');
+        
+        // Add current trail to draw for editing
+        const geom = draw.getAll();
+        if (geom.features.length === 0) {
+          // Load the current trail geometry into draw
+          loadTrailIntoDraw();
+        }
+      } else {
+        btnEdit.textContent = '✏️ Edit Trail';
+        btnEdit.classList.remove('active');
+        log('Edit mode OFF', 'info');
+        
+        // Clear draw and reload trail layers
+        draw.deleteAll();
+        loadTrail(currentTrail.id);
+      }
+    }
+    
+    // Load trail geometry into draw plugin for editing
+    function loadTrailIntoDraw() {
+      if (!currentTrail) return;
+      
+      // Get current geometry from analysis
+      fetch(`/api/analyze/trail/${currentTrail.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.geometry) {
+            const feature = {
+              id: currentTrail.id,
+              type: 'Feature',
+              geometry: data.editedGeometry || data.originalGeometry || data.geometry,
+              properties: {}
+            };
+            draw.add(feature);
+            draw.changeMode('direct_select', { featureId: currentTrail.id });
+            
+            // Hide the regular trail layers while editing
+            ['original-layer', 'edited-layer'].forEach(id => {
+              if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+            });
+          }
+        });
+    }
     
     // Functions
     function log(message, type = 'info') {
@@ -431,8 +600,17 @@
       }
       
       btnSnap.disabled = data.nearbyNHD.length === 0;
+      btnEdit.disabled = false;
       btnSkip.disabled = false;
       btnUndo.disabled = false;
+      
+      // Reset edit mode when loading new trail
+      if (isEditing) {
+        isEditing = false;
+        btnEdit.textContent = '✏️ Edit Trail';
+        btnEdit.classList.remove('active');
+        draw.deleteAll();
+      }
       
       // Update map
       updateMapLayers(data);
@@ -576,12 +754,6 @@
       await loadSession();
       await loadNextTrail();
     }
-    
-    // Initialize
-    map.on('load', async () => {
-      await loadSession();
-      log('Ready! Click "Next Trail" to start editing.', 'success');
-    });
   </script>
 </body>
 </html>

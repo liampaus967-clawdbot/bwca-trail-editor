@@ -401,4 +401,55 @@ router.post('/undo', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/draw/update-geometry
+ * Update trail geometry (from manual editing)
+ */
+router.post('/update-geometry', async (req, res, next) => {
+  try {
+    const { trailId, geometry } = req.body;
+    
+    if (!trailId || !geometry) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PARAMS', message: 'trailId and geometry required' }
+      });
+    }
+    
+    // Get current geometry for undo
+    const currentResult = await query(`
+      SELECT ST_AsGeoJSON(COALESCE(edited_geometry, original_geometry))::json as geometry
+      FROM trail_edits WHERE id = $1
+    `, [trailId]);
+    
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'TRAIL_NOT_FOUND', message: `Trail ${trailId} not found` }
+      });
+    }
+    
+    const oldGeometry = currentResult.rows[0].geometry;
+    
+    // Save operation history
+    await saveOperation(trailId, 'manual_edit', {}, oldGeometry, geometry);
+    
+    // Update geometry
+    await updateTrailGeometry(trailId, geometry);
+    
+    // Notify via WebSocket
+    const io = req.app.get('io');
+    io.emit('trail:updated', { trailId, operation: 'manual_edit' });
+    
+    res.json({
+      success: true,
+      trailId,
+      vertexCount: geometry.coordinates ? geometry.coordinates.length : 0
+    });
+    
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
